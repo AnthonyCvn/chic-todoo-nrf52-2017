@@ -1,0 +1,4 @@
+### Target: targets/myperiph
+target.app: "apps/bleprph"
+target.bsp: "@apache-mynewt-core/hw/bsp/nrf51-blenano"
+target.build_profile: "optimized"

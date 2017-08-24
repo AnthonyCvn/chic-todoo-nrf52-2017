@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "bsp.h": "c",
+        "split.h": "c",
+        "bootutil.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "os.h": "c",
+        "ble.h": "c",
+        "ble_hs.h": "c",
+        "ble_svc_gap.h": "c",
+        "hal_gpio.h": "c",
+        "sysinit.h": "c"
+    }
+}

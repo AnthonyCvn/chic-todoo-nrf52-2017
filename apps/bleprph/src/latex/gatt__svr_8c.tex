@@ -1,0 +1,54 @@
+\hypertarget{gatt__svr_8c}{}\section{gatt\+\_\+svr.\+c File Reference}
+\label{gatt__svr_8c}\index{gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}}
+{\ttfamily \#include $<$assert.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}bsp/bsp.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}host/ble\+\_\+hs.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}host/ble\+\_\+uuid.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}bleprph.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}hal/hal\+\_\+uart.\+h\char`\"{}}\newline
+Include dependency graph for gatt\+\_\+svr.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{gatt__svr_8c__incl}
+\end{center}
+\end{figure}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{gatt__svr_8c_aeca034f67218340ecb2261a22c2f3dcd}{B\+U\+F\+S\+I\+ZE}~100
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{gatt__svr_8c_a1b1de510b8ab4e2449ccc2b3bd58461a}{gatt\+\_\+svr\+\_\+register\+\_\+cb} (struct ble\+\_\+gatt\+\_\+register\+\_\+ctxt $\ast$ctxt, void $\ast$arg)
+\item 
+int \hyperlink{gatt__svr_8c_a038a9dbf2f9610d386dbf69ea810aa9c}{gatt\+\_\+svr\+\_\+init} (void)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\mbox{\Hypertarget{gatt__svr_8c_aeca034f67218340ecb2261a22c2f3dcd}\label{gatt__svr_8c_aeca034f67218340ecb2261a22c2f3dcd}} 
+\index{gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}!B\+U\+F\+S\+I\+ZE@{B\+U\+F\+S\+I\+ZE}}
+\index{B\+U\+F\+S\+I\+ZE@{B\+U\+F\+S\+I\+ZE}!gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}}
+\subsubsection{\texorpdfstring{B\+U\+F\+S\+I\+ZE}{BUFSIZE}}
+{\footnotesize\ttfamily \#define B\+U\+F\+S\+I\+ZE~100}
+
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{gatt__svr_8c_a038a9dbf2f9610d386dbf69ea810aa9c}\label{gatt__svr_8c_a038a9dbf2f9610d386dbf69ea810aa9c}} 
+\index{gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}!gatt\+\_\+svr\+\_\+init@{gatt\+\_\+svr\+\_\+init}}
+\index{gatt\+\_\+svr\+\_\+init@{gatt\+\_\+svr\+\_\+init}!gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}}
+\subsubsection{\texorpdfstring{gatt\+\_\+svr\+\_\+init()}{gatt\_svr\_init()}}
+{\footnotesize\ttfamily int gatt\+\_\+svr\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{gatt__svr_8c_a1b1de510b8ab4e2449ccc2b3bd58461a}\label{gatt__svr_8c_a1b1de510b8ab4e2449ccc2b3bd58461a}} 
+\index{gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}!gatt\+\_\+svr\+\_\+register\+\_\+cb@{gatt\+\_\+svr\+\_\+register\+\_\+cb}}
+\index{gatt\+\_\+svr\+\_\+register\+\_\+cb@{gatt\+\_\+svr\+\_\+register\+\_\+cb}!gatt\+\_\+svr.\+c@{gatt\+\_\+svr.\+c}}
+\subsubsection{\texorpdfstring{gatt\+\_\+svr\+\_\+register\+\_\+cb()}{gatt\_svr\_register\_cb()}}
+{\footnotesize\ttfamily void gatt\+\_\+svr\+\_\+register\+\_\+cb (\begin{DoxyParamCaption}\item[{struct ble\+\_\+gatt\+\_\+register\+\_\+ctxt $\ast$}]{ctxt,  }\item[{void $\ast$}]{arg }\end{DoxyParamCaption})}
+

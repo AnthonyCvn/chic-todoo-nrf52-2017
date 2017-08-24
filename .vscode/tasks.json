@@ -1,0 +1,40 @@
+{
+    "version": "0.1.0",
+    "command": "newt",
+    "echoCommand": true,
+    "isShellCommand": true,
+
+    "tasks":[
+        {
+            "taskName": "build_nrf51_boot",
+            "args": ["build", "nrf51_boot"],
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "build_myperiph",
+            "args": ["build", "myperiph"],
+            "isBuildCommand": true,  
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "create_myperiph",
+            "args": ["create-image", "myperiph", "1.0.0"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "debug_myperiph",
+            "args": ["debug", "myperiph", "-n"],
+            "suppressTaskName": true
+        },
+                {
+            "taskName": "load_nrf51_boot",
+            "args": ["load", "nrf51_boot"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "load_myperiph",
+            "args": ["load", "myperiph"],
+            "suppressTaskName":true
+        }
+    ]
+}

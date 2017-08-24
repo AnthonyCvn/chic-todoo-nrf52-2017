@@ -1,0 +1,62 @@
+\hypertarget{main_8c}{}\section{main.\+c File Reference}
+\label{main_8c}\index{main.\+c@{main.\+c}}
+{\ttfamily \#include $<$assert.\+h$>$}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include $<$stdio.\+h$>$}\newline
+{\ttfamily \#include $<$errno.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}sysinit/sysinit.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}bsp/bsp.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}os/os.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}hal/hal\+\_\+gpio.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}console/console.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}hal/hal\+\_\+system.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}config/config.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}split/split.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}nimble/ble.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}host/ble\+\_\+hs.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}services/gap/ble\+\_\+svc\+\_\+gap.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}bleprph.\+h\char`\"{}}\newline
+Include dependency graph for main.\+c\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{main_8c__incl}
+\end{center}
+\end{figure}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{main_8c_a840291bc02cba5474a4cb46a9b9566fe}{main} (void)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+struct log \hyperlink{main_8c_a3cb7621a683b5c12e82853697f64aafb}{bleprph\+\_\+log}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\mbox{\Hypertarget{main_8c_a840291bc02cba5474a4cb46a9b9566fe}\label{main_8c_a840291bc02cba5474a4cb46a9b9566fe}} 
+\index{main.\+c@{main.\+c}!main@{main}}
+\index{main@{main}!main.\+c@{main.\+c}}
+\subsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily int main (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+main
+
+The main task for the project. This function initializes the packages, then starts serving events from default event queue.
+
+\begin{DoxyReturn}{Returns}
+int N\+O\+TE\+: this function should never return! 
+\end{DoxyReturn}
+
+
+\subsection{Variable Documentation}
+\mbox{\Hypertarget{main_8c_a3cb7621a683b5c12e82853697f64aafb}\label{main_8c_a3cb7621a683b5c12e82853697f64aafb}} 
+\index{main.\+c@{main.\+c}!bleprph\+\_\+log@{bleprph\+\_\+log}}
+\index{bleprph\+\_\+log@{bleprph\+\_\+log}!main.\+c@{main.\+c}}
+\subsubsection{\texorpdfstring{bleprph\+\_\+log}{bleprph\_log}}
+{\footnotesize\ttfamily struct log bleprph\+\_\+log}
+
+Log data. 

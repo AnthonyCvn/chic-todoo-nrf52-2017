@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "gdb_myperiph",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceRoot}\\bin\\targets\\myperiph\\app\\apps\\bleprph\\bleprph.elf",
+            "target": ":3333",
+            "cwd": "${workspaceRoot}",
+            "gdbpath": "C:\\Program Files (x86)\\GNU Tools ARM Embedded\\4.9 2015q2\\bin\\arm-none-eabi-gdb.exe",
+            "remote": true
+
+        }
+    ]

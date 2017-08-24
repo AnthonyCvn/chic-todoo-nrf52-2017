@@ -1,0 +1,3 @@
+gdb_port 3333
+telnet_port 4444
+; nrf51.cpu configure -event gdb-detach {if {[nrf51.cpu curstate] eq "halted"} resume;shutdown}
