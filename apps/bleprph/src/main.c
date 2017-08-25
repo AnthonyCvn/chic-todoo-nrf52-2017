@@ -39,6 +39,14 @@
 /* Application-specified header. */
 #include "bleprph.h"
 
+/* lcd header */
+#include "screentask.h"
+
+/* SPI */
+#include "hal/hal_spi.h"
+
+// #include "mcu/nrf51_hal.h"
+
 /** Log data. */
 struct log bleprph_log;
 
@@ -245,13 +253,8 @@ bleprph_on_sync(void)
     bleprph_advertise();
 }
 
-// For GPIO configuration
+// GPIO configuration
 int g_led_pin;
-int ncs_lcd;
-int sck_lcd;  
-int mosi_lcd;  
-int dc_lcd; 
-int pwm_lcd;   
 
 
 /**
@@ -293,26 +296,20 @@ main(void)
 
     conf_load();
 
-    // GPIO configuration
+    /* Initialise the screen task. */
+    os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
+            SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
+            SCREENTASK_STACK_SIZE);
+
+    /*  GPIO configuration. */
     g_led_pin = LED_BLINK_PIN;
     hal_gpio_init_out(g_led_pin, 1);
-
-    ncs_lcd=nCS_LCD ;
-    hal_gpio_init_in(ncs_lcd, HAL_GPIO_PULL_NONE);
-    sck_lcd=SCK_LCD;
-    hal_gpio_init_in(sck_lcd, HAL_GPIO_PULL_NONE);
-    mosi_lcd=MOSI_LCD;  
-    hal_gpio_init_in(mosi_lcd, HAL_GPIO_PULL_NONE);
-    dc_lcd=DC_LCD;
-    hal_gpio_init_in(dc_lcd, HAL_GPIO_PULL_NONE);
-    pwm_lcd=PWM_LCD;
-    hal_gpio_init_in(pwm_lcd, HAL_GPIO_PULL_NONE);
 
     /* toggle the LED */
     int i;
     for (i = 0; i <= 6; ++i)
     {
-        os_time_delay(OS_TICKS_PER_SEC>>1);<
+        os_time_delay(OS_TICKS_PER_SEC>>1);
         hal_gpio_toggle(g_led_pin);
     }
 

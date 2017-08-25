@@ -10,6 +10,12 @@
         "ble_hs.h": "c",
         "ble_svc_gap.h": "c",
         "hal_gpio.h": "c",
-        "sysinit.h": "c"
+        "sysinit.h": "c",
+        "bleprph.h": "c",
+        "screentask.h": "c",
+        "stm32_adafruit_lcd.h": "c",
+        "hal_uart.h": "c",
+        "hal_spi.h": "c",
+        "nrf51_hal.h": "c"
     }
 }

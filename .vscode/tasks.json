@@ -20,6 +20,11 @@
             "taskName": "create_myperiph",
             "args": ["create-image", "myperiph", "1.0.0"],
             "suppressTaskName":true
+        },
+        {
+            "taskName": "run_myperiph",
+            "args": ["run", "myperiph", "1.0.0","-n"],
+            "suppressTaskName":true
         }, 
         {
             "taskName": "debug_myperiph",
