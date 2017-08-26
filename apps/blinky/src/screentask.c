@@ -53,7 +53,19 @@ screen_task_handler(void *arg)
 
         /* Toggle the LED */
         hal_gpio_toggle(g_led_pin);
+        BSP_LCD_Clear(LCD_COLOR_RED);
+        BSP_LCD_Clear(LCD_COLOR_GREEN);
+        BSP_LCD_Clear(LCD_COLOR_BLUE);
+        BSP_LCD_Clear(LCD_COLOR_CYAN);
+        BSP_LCD_DrawCircle(64, 64, 10);
+        BSP_LCD_DrawCircle(64, 64, 20);
         BSP_LCD_DrawCircle(64, 64, 30);
+        BSP_LCD_DrawCircle(64, 64, 40);
+        BSP_LCD_DrawCircle(64, 64, 50);
+        BSP_LCD_DrawCircle(64, 64, 60);
+        BSP_LCD_DrawCircle(64, 64, 70);
+        BSP_LCD_DrawCircle(64, 64, 80);
+        BSP_LCD_DrawCircle(64, 64, 90);
     }
 }
 
@@ -62,7 +74,9 @@ screen_task_handler(void *arg)
 void send_8bit_serial(uint8_t *Data)
 {
    int i;
-   unsigned char data = *Data;
+   unsigned char data;
+
+   data = *Data;
 
    // send bits 7..0
    for (i = 0; i < 8; i++)
@@ -91,9 +105,10 @@ void LCD_IO_Init(void){
 	/* LCD chip select high */
 	hal_gpio_write(ncs_lcd, 1); //LCD_CS_HIGH();
 }
-void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t Size){
+void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
 	/*Send the data by SPI1 (could be adapted by changing the hspiX)*/
-	
+    int j=0;
+    
 	/* Reset LCD control line CS */
 	hal_gpio_write(ncs_lcd, 0);
 
@@ -102,8 +117,11 @@ void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t Size){
 
 	/* Send Command */
 	/* While the SPI in TransmitReceive process, user can transmit data through
-	     "pData" buffer */	  
-        send_8bit_serial(pData);
+         "pData" buffer */
+    for(j=0;j<pData_numb;j++){
+        send_8bit_serial(pData+j);
+    }
+
 
 	/* Deselect : Chip Select high */
 	hal_gpio_write(ncs_lcd, 1);

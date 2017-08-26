@@ -42,11 +42,6 @@
 /* lcd header */
 #include "screentask.h"
 
-/* SPI */
-#include "hal/hal_spi.h"
-
-// #include "mcu/nrf51_hal.h"
-
 /** Log data. */
 struct log bleprph_log;
 

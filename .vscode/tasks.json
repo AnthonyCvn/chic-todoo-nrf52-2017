@@ -40,6 +40,32 @@
             "taskName": "load_myperiph",
             "args": ["load", "myperiph"],
             "suppressTaskName":true
+        },
+        {
+            "taskName": "build_blinky",
+            "args": ["build", "blinky"],
+            "isBuildCommand": true,  
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "create_blinky",
+            "args": ["create-image", "blinky", "1.0.0"],
+            "suppressTaskName":true
+        },
+        {
+            "taskName": "run_blinky",
+            "args": ["run", "blinky", "1.0.0","-n"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "debug_blinky",
+            "args": ["debug", "blinky", "-n"],
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "load_blinky",
+            "args": ["load", "blinky"],
+            "suppressTaskName":true
         }
     ]
 }

@@ -28,6 +28,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+/* lcd header */
+#include "screentask.h"
+
 static volatile int g_task1_loops;
 
 /* For LED toggling */
@@ -52,8 +55,15 @@ main(int argc, char **argv)
 
     sysinit();
 
+    /* Initialise the screen task. */
+    os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
+    SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
+    SCREENTASK_STACK_SIZE);
+
+
     g_led_pin = LED_BLINK_PIN;
     hal_gpio_init_out(g_led_pin, 1);
+
 
     while (1) {
         ++g_task1_loops;

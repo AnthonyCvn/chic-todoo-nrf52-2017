@@ -16,6 +16,7 @@
         "stm32_adafruit_lcd.h": "c",
         "hal_uart.h": "c",
         "hal_spi.h": "c",
-        "nrf51_hal.h": "c"
+        "nrf51_hal.h": "c",
+        "st7735.h": "c"
     }
 }
