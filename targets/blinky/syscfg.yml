@@ -1,0 +1,5 @@
+### Package: targets/blinky
+
+syscfg.vals:
+    SPI_0_MASTER: "1"
+    SPI_1_MASTER: "1"

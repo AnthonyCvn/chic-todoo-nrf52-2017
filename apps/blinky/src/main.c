@@ -28,8 +28,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-/* lcd header */
+/* New task */
 #include "screentask.h"
+#include "flashtask.h"
 
 static volatile int g_task1_loops;
 
@@ -55,11 +56,14 @@ main(int argc, char **argv)
 
     sysinit();
 
-    /* Initialise the screen task. */
+    /* Initialise new tasks. */
     os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
     SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
     SCREENTASK_STACK_SIZE);
-
+	
+    os_task_init(&flashtask, "flashtask", flash_task_handler, NULL, 
+    FLASHTASK_PRIO, OS_WAIT_FOREVER, flashtask_stack,
+    FLASHTASK_STACK_SIZE);
 
     g_led_pin = LED_BLINK_PIN;
     hal_gpio_init_out(g_led_pin, 1);

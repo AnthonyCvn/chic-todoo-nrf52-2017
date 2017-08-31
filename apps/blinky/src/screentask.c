@@ -12,7 +12,17 @@
 /* lcd header */
 #include "lcd/stm32_adafruit_lcd.h"
 
+/* SPI */
+#include <hal/hal_spi.h>
+
 static volatile int g_task1_loops;
+
+static struct hal_spi_settings screen_SPI_settings = {
+    .data_order = HAL_SPI_MSB_FIRST,
+    .data_mode  = HAL_SPI_MODE0,
+    .baudrate   = 8000, // max 8000
+    .word_size  = HAL_SPI_WORD_SIZE_8BIT,
+};
 
 // GPIO declaration
 int g_led_pin;
@@ -22,11 +32,18 @@ int mosi_lcd;
 int dc_lcd; 
 int pwm_lcd; 
 
+uint8_t rxbuf[5];
+
 
 /* New task for the LCD management */
 void
 screen_task_handler(void *arg)
 {
+    hal_spi_disable(1);
+    hal_spi_config(1, &screen_SPI_settings);
+    hal_spi_enable(1);
+
+
     /*  GPIO configuration. */
     g_led_pin = LED_BLINK_PIN;
     ncs_lcd=nCS_LCD;
@@ -119,7 +136,8 @@ void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
 	/* While the SPI in TransmitReceive process, user can transmit data through
          "pData" buffer */
     for(j=0;j<pData_numb;j++){
-        send_8bit_serial(pData+j);
+        //send_8bit_serial(pData+j);
+        hal_spi_txrx(1, pData+j, rxbuf, 1);
     }
 
 
@@ -138,7 +156,8 @@ void LCD_IO_WriteReg(uint8_t Reg){
 	/* Send Command */
 	/* While the SPI in TransmitReceive process, user can transmit data through
 	     "Reg" buffer*/
-        send_8bit_serial(&Reg);
+        //send_8bit_serial(&Reg);
+        hal_spi_txrx(1, &Reg, rxbuf, 1);
 
 	/* Deselect : Chip Select high */
 	hal_gpio_write(ncs_lcd, 1);
