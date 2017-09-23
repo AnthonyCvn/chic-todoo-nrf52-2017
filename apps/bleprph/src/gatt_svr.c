@@ -31,7 +31,8 @@
 #define BUFSIZE 100
 
 // Static value for write and read process 
-static uint32_t gatt_svr_data_trans;
+static uint32_t gatt_svr_data_trans[20];
+
 static uint8_t buffer[BUFSIZE];
 static uint8_t data_pos=0;
 
@@ -92,7 +93,7 @@ gatt_svr_chr_write(struct os_mbuf *om, uint16_t min_len, uint16_t max_len,
     return 0;
 }
 
-// Call back function for the custom GATT Service
+// Call back function for a custom GATT Service
 static int
 gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                              struct ble_gatt_access_ctxt *ctxt,
@@ -116,11 +117,11 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
 
         case BLE_GATT_ACCESS_OP_WRITE_CHR :
             rc = gatt_svr_chr_write(ctxt->om,
+                                    1, //sizeof gatt_svr_data_trans
                                     sizeof gatt_svr_data_trans,
-                                    sizeof gatt_svr_data_trans,
-                                    &gatt_svr_data_trans, NULL);
+                                    &gatt_svr_data_trans[0], NULL);
             /* Save data in buffer */
-            buffer[data_pos]=gatt_svr_data_trans;
+            buffer[data_pos]=gatt_svr_data_trans[data_pos];
             /* write to UART with blocking */
             hal_uart_blocking_tx(0, buffer[data_pos]);
             ++data_pos;

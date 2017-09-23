@@ -11,15 +11,28 @@
 
 /* lcd header */
 #include "lcd/stm32_adafruit_lcd.h"
+#include "lcd/picture.h"
 
 /* SPI */
 #include <hal/hal_spi.h>
+
+#include <SST26/SST26.h>
+
+#include "mcu/nrf51_hal.h"
+
+#include "screentask.h"
+
+#include "lcd/lcd.h"
+
+#include "lcd/st7735.h"
+
+#include "lcd/stm32_adafruit_lcd.h"
 
 static volatile int g_task1_loops;
 
 static struct hal_spi_settings screen_SPI_settings = {
     .data_order = HAL_SPI_MSB_FIRST,
-    .data_mode  = HAL_SPI_MODE0,
+    .data_mode  = HAL_SPI_MODE3,
     .baudrate   = 8000, // max 8000
     .word_size  = HAL_SPI_WORD_SIZE_8BIT,
 };
@@ -61,19 +74,99 @@ screen_task_handler(void *arg)
 
     st7735_DisplayOff();
     BSP_LCD_Init();
+    //st7735_DisplayOn();
+
+    //BSP_LCD_Clear(LCD_COLOR_RED);
+    //BSP_LCD_Clear(LCD_COLOR_GREEN);
+    //BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+    //BSP_LCD_Clear(LCD_COLOR_WHITE);
+    //BSP_LCD_DrawBitmap(0, 0, (uint8_t *)bmp0_test_image);
+
+    //BSP_LCD_DrawBitmap(0, 0, (uint8_t *)bmp0_test_image);
+    //BSP_LCD_DrawBitmap(0, 0, (uint8_t *)bluetooth_icon);
+
+
+
+    static const uint8_t SPI_SCK_PIN  = 24;
+    static const uint8_t SPI_MOSI_PIN = 21;
+    static const uint8_t SPI_MISO_PIN = 22;
+    static const uint8_t SPI_SS_PIN   = 23;
+  
+    struct nrf51_hal_spi_cfg spi_cfg = {
+        .sck_pin      = SPI_SCK_PIN ,
+        .mosi_pin     = SPI_MOSI_PIN,
+        .miso_pin     = SPI_MISO_PIN,
+        .ss_pin       = SPI_SS_PIN 
+    };
+
+    struct sst26_dev *my_sst26_dev = NULL;
+    
+    my_sst26_dev = sst26_default_config();
+    my_sst26_dev->spi_num = 0;
+    my_sst26_dev->spi_cfg = &spi_cfg;
+    my_sst26_dev->ss_pin = spi_cfg.ss_pin;
+
+    int rc;
+    rc = sst26_init((struct hal_flash *) my_sst26_dev);
+    if (rc) {
+        // XXX: error handling 
+    }
+
+
+    BSP_LCD_Clear(LCD_COLOR_RED);
+
+    BSP_LCD_Clear(LCD_COLOR_GREEN);
+    
+    //sst26_chip_erase((struct hal_flash *) my_sst26_dev);
+    
+    //sst26_write((struct hal_flash *) my_sst26_dev, 0, &bmp0_test_image, sizeof(bmp0_test_image));
+
+    BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+    BSP_LCD_DrawBitmap(0, 0, (uint8_t *)bmp0_test_image);
+
+    //sst26_write((struct hal_flash *) my_sst26_dev, 0, &bmp0_test_image, 17461);
+
+    //BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+    ext_memory_bitmap_to_LCD(0, 0, 0, (struct hal_flash *) my_sst26_dev);
+
+
+    //BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+    //uint16_t color;
+    //int k;
+
+    //unsigned char pbmp[100];
 
     while (1) {
         ++g_task1_loops;
 
         /* Wait one second */
+        /*
+        for(k=0;k<16;k++){
+            color=(1<<k);
+            BSP_LCD_Clear(color);
+            os_time_delay(OS_TICKS_PER_SEC);
+        }
+        */
+
+        BSP_LCD_DrawBitmap(0, 0, (uint8_t *)bmp0_test_image);
+        
+            //sst26_write((struct hal_flash *) my_sst26_dev, 0, &bmp0_test_image, 17461);
+        
+            //BSP_LCD_Clear(LCD_COLOR_BLUE);
+        os_time_delay(OS_TICKS_PER_SEC);
+        
+        //ext_memory_bitmap_to_LCD(0, 0, 0, (struct hal_flash *) my_sst26_dev);
         os_time_delay(OS_TICKS_PER_SEC);
 
-        /* Toggle the LED */
-        hal_gpio_toggle(g_led_pin);
-        BSP_LCD_Clear(LCD_COLOR_RED);
-        BSP_LCD_Clear(LCD_COLOR_GREEN);
-        BSP_LCD_Clear(LCD_COLOR_BLUE);
-        BSP_LCD_Clear(LCD_COLOR_CYAN);
+        //sst26_read((struct hal_flash *) my_sst26_dev, 0, pbmp, 10);
+
+        //sst26_read((struct hal_flash *) my_sst26_dev, 0, pbmp, 100);
+    
+        /* 
         BSP_LCD_DrawCircle(64, 64, 10);
         BSP_LCD_DrawCircle(64, 64, 20);
         BSP_LCD_DrawCircle(64, 64, 30);
@@ -83,10 +176,84 @@ screen_task_handler(void *arg)
         BSP_LCD_DrawCircle(64, 64, 70);
         BSP_LCD_DrawCircle(64, 64, 80);
         BSP_LCD_DrawCircle(64, 64, 90);
+        */
     }
 }
 
 //////////////////////////////* LCD IO functions *//////////////////
+void ext_memory_bitmap_to_LCD(uint16_t Xpos, uint16_t Ypos,  uint32_t addr, const struct hal_flash * sst26_dev){
+
+        /*Send the data by SPI1 (could be adapted by changing the hspiX)*/
+        uint32_t j=0;
+        uint32_t height = 0, width  = 0;
+        uint32_t index = 0, size = 0;
+
+        /* Image buffer */
+        unsigned char pbmp[100];
+                
+        /* Read a set of bytes */
+        sst26_read((struct hal_flash *) sst26_dev, addr, &pbmp[0], 100);
+        
+        /* Read bitmap width */
+        width = *(uint16_t *) (pbmp + 18);
+        width |= (*(uint16_t *) (pbmp + 20)) << 16;
+        
+        /* Read bitmap height */
+        height = *(uint16_t *) (pbmp + 22);
+        height |= (*(uint16_t *) (pbmp + 24)) << 16;
+        
+        
+        /* Remap Ypos, st7735 works with inverted X in case of bitmap */
+        /* X = 0, cursor is on Top corner */
+
+        Ypos = BSP_LCD_GetYSize() - Ypos - height;
+        
+        st7735_SetDisplayWindow(Xpos, Ypos, width, height);
+        
+        /* Read bitmap size */
+        size = *(volatile uint16_t *) (pbmp + 2);
+        size |= (*(volatile uint16_t *) (pbmp + 4)) << 16;
+        /* Get bitmap data address offset */
+        index = *(volatile uint16_t *) (pbmp + 10);
+        index |= (*(volatile uint16_t *) (pbmp + 12)) << 16;
+        size = (size - index)/2;
+        //pbmp += index;
+        
+        /* Set GRAM write direction and BGR = 0 */
+        /* Memory access control: MY = 0, MX = 1, MV = 0, ML = 0 */
+        st7735_WriteReg(LCD_REG_54, 0x48);
+      
+        /* Set Cursor */
+        st7735_SetCursor(Xpos, Ypos);  
+
+        /* Reset LCD control line CS */
+        hal_gpio_write(ncs_lcd, 0);
+    
+        /* Set LCD data/command line DC to high */
+        hal_gpio_write(dc_lcd, 1);
+        
+    
+        /* Send Command */
+        /* While the SPI in TransmitReceive process, user can transmit data through
+             "pData" buffer */
+    
+        for(j=0;j<size*2;j+=2){                
+            sst26_read((struct hal_flash *) sst26_dev, j+addr+index, &pbmp[0], 2);      
+            hal_spi_txrx(1, &pbmp[1], rxbuf, 1);
+            hal_spi_txrx(1, &pbmp[0], rxbuf, 1);
+        }
+    
+        /* Deselect : Chip Select high */
+        hal_gpio_write(ncs_lcd, 1);
+
+        /* Set GRAM write direction and BGR = 0 */
+        /* Memory access control: MY = 1, MX = 1, MV = 0, ML = 0 */
+        // st7735_WriteReg(LCD_REG_54, 0x60); //0xC0 
+        // LCD_REG_54 change RBG to GBR
+
+}
+
+
 // transmit byte serially, MSB first
 void send_8bit_serial(uint8_t *Data)
 {
@@ -124,20 +291,27 @@ void LCD_IO_Init(void){
 }
 void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
 	/*Send the data by SPI1 (could be adapted by changing the hspiX)*/
-    int j=0;
+    uint32_t j=0;
     
 	/* Reset LCD control line CS */
 	hal_gpio_write(ncs_lcd, 0);
 
 	/* Set LCD data/command line DC to high */
-	hal_gpio_write(dc_lcd, 1);
+    hal_gpio_write(dc_lcd, 1);
 
 	/* Send Command */
 	/* While the SPI in TransmitReceive process, user can transmit data through
          "pData" buffer */
-    for(j=0;j<pData_numb;j++){
-        //send_8bit_serial(pData+j);
-        hal_spi_txrx(1, pData+j, rxbuf, 1);
+
+    if(pData_numb==1){
+        hal_spi_txrx(1, pData, rxbuf, 1);
+    }
+    else{
+        for(j=0;j<pData_numb;j+=2){
+            //send_8bit_serial(pData+j);
+            hal_spi_txrx(1, pData+j+1, rxbuf, 1);
+            hal_spi_txrx(1, pData+j, rxbuf, 1);
+        }
     }
 
 
@@ -166,4 +340,3 @@ void LCD_Delay(uint32_t delay){
     
     os_time_delay(delay);
 }
-

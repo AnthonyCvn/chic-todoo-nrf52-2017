@@ -27,6 +27,10 @@
         "syscfg.h": "c",
         "assert.h": "c",
         "hal_system.h": "c",
-        "uart_hal.h": "c"
+        "uart_hal.h": "c",
+        "hal_i2c.h": "c",
+        "mcu_sim.h": "c",
+        "uart.h": "c",
+        "picture.h": "c"
     }
 }

@@ -1,5 +1,7 @@
 ### Package: targets/blinky
 
 syscfg.vals:
+    I2C_0: "0"
+    I2C_1: "0"
     SPI_0_MASTER: "1"
     SPI_1_MASTER: "1"

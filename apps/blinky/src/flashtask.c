@@ -41,22 +41,18 @@ flash_task_handler(void *arg)
     my_sst26_dev->spi_cfg = &spi_cfg;
     my_sst26_dev->ss_pin = spi_cfg.ss_pin;
 
+    /*
     int rc;
     rc = sst26_init((struct hal_flash *) my_sst26_dev);
     if (rc) {
         // XXX: error handling 
     }
+    */
 
     
-    uint8_t i;
 
-    uint32_t addr=0;
-    uint32_t len=50;
-
-
-    static uint8_t buf[10];
-
-    
+    //sst26_write((struct hal_flash *) my_sst26_dev, addr, buf, len);
+    //sst26_read((struct hal_flash *) my_sst26_dev, addr, buf, len);
 
     while (1) {
         ++g_task1_loops;
@@ -64,15 +60,11 @@ flash_task_handler(void *arg)
         /* Wait one second */
         os_time_delay(OS_TICKS_PER_SEC);
 
-        for(i=10;i<len;i++){
-            buf[i]=i;
-        }
 
-        sst26_write((struct hal_flash *) my_sst26_dev, addr, buf, len);
 
         //os_time_delay(OS_TICKS_PER_SEC);
 
-        sst26_read((struct hal_flash *) my_sst26_dev, addr, buf, len);
+
 
     }
 }
