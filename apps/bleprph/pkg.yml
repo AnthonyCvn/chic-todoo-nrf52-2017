@@ -40,4 +40,5 @@ pkg.deps:
     - "@apache-mynewt-core/sys/stats/full"
     - "@apache-mynewt-core/sys/sysinit"
     - "@apache-mynewt-core/sys/id"
+    - libs/my_drivers/flash_SST26
     

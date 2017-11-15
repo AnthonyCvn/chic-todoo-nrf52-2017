@@ -40,10 +40,13 @@
 #include "bleprph.h"
 
 /* lcd header */
-#include "screentask.h"
+//#include "screentask.h"
+
+#include "flashtask.h"
 
 /** Log data. */
 struct log bleprph_log;
+
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -248,6 +251,7 @@ bleprph_on_sync(void)
     bleprph_advertise();
 }
 
+
 // GPIO configuration
 int g_led_pin;
 
@@ -292,22 +296,13 @@ main(void)
     conf_load();
 
     /* Initialise the screen task. */
+    /*
     os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
             SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
             SCREENTASK_STACK_SIZE);
+    */
 
-    /*  GPIO configuration. */
-    g_led_pin = LED_BLINK_PIN;
-    hal_gpio_init_out(g_led_pin, 1);
-
-    /* toggle the LED */
-    int i;
-    for (i = 0; i <= 6; ++i)
-    {
-        os_time_delay(OS_TICKS_PER_SEC>>1);
-        hal_gpio_toggle(g_led_pin);
-    }
-
+    
     /* If this app is acting as the loader in a split image setup, jump into
      * the second stage application instead of starting the OS.
      */
@@ -324,6 +319,12 @@ main(void)
     /*
      * As the last thing, process events from default event queue.
      */
+
+    /* Initialise new tasks. */        
+    os_task_init(&flashtask, "flashtask", flash_task_handler, NULL, 
+    FLASHTASK_PRIO, OS_WAIT_FOREVER, flashtask_stack,
+    FLASHTASK_STACK_SIZE);
+
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }

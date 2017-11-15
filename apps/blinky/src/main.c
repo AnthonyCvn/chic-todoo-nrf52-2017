@@ -45,11 +45,165 @@
 #include "screentask.h"
 #include "flashtask.h"
 
-static volatile int g_task1_loops;
-
-/* For LED toggling */
+/* First task and LED toggling */
+static volatile uint8_t g_task1_loops;
 int g_led_pin;
-   
+
+///////////////////////////////////////////////////////// Todoo structure
+#include "todoo_data.h"
+
+struct Todoo_data *todoo = NULL;
+static void init_structure_exemple(struct Todoo_data *todoo);
+
+// 1 /////////////////////////////////////////////////// Definition and calback for timer and GPIO interuption
+// Define button and test point pin
+#define BUTTON_ADV_PIN  8
+#define TEST_POINT_6  15
+// Timer task number and stask size.
+#define MY_TIMER_INTERRUPT_TASK_PRIO  4
+#define MY_TIMER_INTERRUPT_TASK_STACK_SZ    512
+
+// initilize event call back
+static void my_interrupt_ev_cb(struct os_event *);
+
+static struct os_event gpio_ev = {
+    .ev_cb = my_interrupt_ev_cb,
+};
+
+static void my_timer_ev_cb(struct os_event *);
+static struct os_eventq my_timer_interrupt_eventq;
+
+static os_stack_t my_timer_interrupt_task_stack[MY_TIMER_INTERRUPT_TASK_STACK_SZ];
+static struct os_task my_timer_interrupt_task_str;
+
+/* The timer callout */
+static struct os_callout my_callout;
+/*
+ * Event callback function for the timer events every second.
+ */
+static void my_timer_ev_cb(struct os_event *ev)
+{
+    assert(ev != NULL);
+
+    ++todoo->parameters->time[B_SEC];
+    if(sec>59){
+        todoo->parameters->time[B_SEC] = 0;
+        ++todoo->parameters->time[B_MIN];
+        if(min>59){
+            todoo->parameters->time[B_MIN] = 0;
+            ++todoo->parameters->time[B_HOUR];
+            if(hour>23){
+                todoo->parameters->time[B_HOUR] = 0;
+            }
+
+        }
+    }
+
+    os_callout_reset(&my_callout, OS_TICKS_PER_SEC);
+}
+static void my_timer_interrupt_task(void *arg)
+{
+    while (1) {
+        os_eventq_run(&my_timer_interrupt_eventq);
+    }
+}
+/*
+ * Event callback function for interrupt events. Start advertising if button is pressed more than 8 sec
+ */
+static void my_interrupt_ev_cb(struct os_event *ev)
+{
+    assert(ev != NULL);
+
+    static uint8_t capture_time, logic_time_pressed = 0;
+    
+    hal_gpio_write(TEST_POINT_6, 0);
+
+    if(logic_time_pressed == 0){
+        capture_time = sec;
+        logic_time_pressed = 1;
+    }else{
+        logic_time_pressed = 0;
+        if((sec-capture_time) >= 8){
+            hal_gpio_write(TEST_POINT_6, 1);
+        }
+    }
+}
+
+static void
+my_gpio_irq(void *arg)
+{   
+    // Post an interrupt event to the my_timer_interrupt_eventq event queue:
+    os_eventq_put(&my_timer_interrupt_eventq, &gpio_ev);
+}
+
+/*
+ * Task and interupt initialization for the Todoo app
+ */
+static void
+init_todoo(void)
+{
+    /* 
+     * Initialize and enable interrupts for the pin for button 1 and 
+     * configure the button with pull up resistor on the nrf52dk.
+     */ 
+    hal_gpio_irq_init(BUTTON_ADV_PIN, my_gpio_irq, NULL, HAL_GPIO_TRIG_RISING, HAL_GPIO_PULL_UP);  
+    hal_gpio_irq_enable(BUTTON_ADV_PIN);
+    hal_gpio_init_out(TEST_POINT_6, 1);
+
+    /* 
+     * Initialize the data structure todoo and allocate 
+     * enough memory depending of the number of activities
+     */
+
+    todoo = malloc(sizeof(struct Todoo_data));
+
+    todoo->parameters = malloc(sizeof(struct Parameters));
+    todoo->parameters->num_activity=2;
+    todoo->activity = malloc(todoo->parameters->num_activity*sizeof(struct Activity));
+
+    init_structure_exemple(todoo);
+}
+// 1 ///////////////////////////////////////////////////// 1 ///////////////////////////////////////////////////
+
+static void
+init_structure_exemple(struct Todoo_data *todoo){
+    int i;
+
+    todoo->parameters->theme = 1;
+    todoo->parameters->transition = 1;
+    todoo->parameters->num_activity = 2;
+
+    todoo->parameters->date[0] = 15;
+    todoo->parameters->date[1] = 15;
+    todoo->parameters->date[2] = 15;
+
+    todoo->parameters->time[0] = 15;
+    todoo->parameters->time[1] = 15;
+    todoo->parameters->time[2] = 15;
+
+
+    for(i=0;i<todoo->parameters->num_activity;i++){
+        todoo->activity[i].date[0] = 15;
+        todoo->activity[i].date[1] = 15;
+        todoo->activity[i].date[2] = 15;
+
+        todoo->activity[i].start_time[0] = 15;
+        todoo->activity[i].start_time[1] = 15 + 2*i;
+        todoo->activity[i].start_time[2] = 15;
+
+        todoo->activity[i].end_time[0] = 15;
+        todoo->activity[i].end_time[1] = 16 + 2*i;
+        todoo->activity[i].end_time[2] = 15;
+
+        todoo->activity[i].data_add = 17;
+        todoo->activity[i].data_size = 17;
+    }
+
+}
+
+// 2 //////////////////////////////////////////////////////// 2 ////////////////////////////////////////////////
+
+
 
 void r0_call_back(void); 
 
@@ -148,6 +302,33 @@ main(int argc, char **argv)
 
     console_init(rx_cb);
     
+
+
+    // Initialize timer
+    /* Use a dedicate event queue for timer and interrupt events */
+    os_eventq_init(&my_timer_interrupt_eventq);
+    /* 
+     * Create the task to process timer and interrupt events from the
+     * my_timer_interrupt_eventq event queue.
+     */
+    os_task_init(&my_timer_interrupt_task_str, "timer_interrupt_task", 
+                    my_timer_interrupt_task, NULL, 
+                    MY_TIMER_INTERRUPT_TASK_PRIO, OS_WAIT_FOREVER, 
+                    my_timer_interrupt_task_stack, 
+                    MY_TIMER_INTERRUPT_TASK_STACK_SZ);
+    /* 
+    * Initialize the callout for a timer event.  
+    * The my_timer_ev_cb callback function processes the timer events.
+    */
+    os_callout_init(&my_callout, &my_timer_interrupt_eventq, my_timer_ev_cb, NULL);
+
+    os_callout_reset(&my_callout, OS_TICKS_PER_SEC);
+
+    
+    // Task and interupt initialization for the Todoo app
+    init_todoo();
+
+
     while (1) {
         ++g_task1_loops;
         

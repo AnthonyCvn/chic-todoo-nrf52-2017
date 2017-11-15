@@ -96,6 +96,20 @@ typedef enum
 
 }Line_ModeTypdef;
 
+
+/** 
+  * @brief  Orientation
+  */ 
+  typedef enum
+  {
+    BOTTOM, 
+    TOP,
+    LEFT,
+    RIGHT,
+    TOPLEFT,
+    TOPRIGHT  
+  }Orientation;
+
 /**
   * @}
   */ 
@@ -129,7 +143,7 @@ typedef enum
 /** 
   * @brief LCD default font 
   */ 
-#define LCD_DEFAULT_FONT         Font8
+#define LCD_DEFAULT_FONT         Font16
 
 /**
   * @}
@@ -171,6 +185,10 @@ void     BSP_LCD_FillEllipse(int Xpos, int Ypos, int XRadius, int YRadius);
 
 void     BSP_LCD_DisplayOff(void);
 void     BSP_LCD_DisplayOn(void);
+
+// personnal
+void BSP_LCD_FillLoading(uint16_t Xpos, uint16_t Ypos, Orientation Orient);
+void BSP_LCD_Filltopcorner(uint8_t radius);
 
 /**
   * @}

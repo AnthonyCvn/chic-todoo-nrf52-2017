@@ -14,3 +14,5 @@
         }
     ]
 }
+//"executable": "${workspaceRoot}\\bin\\targets\\myperiph\\app\\apps\\bleprph\\bleprph.elf",
+//"executable": "${workspaceRoot}\\bin\\targets\\blinky\\app\\apps\\blinky\\blinky.elf",

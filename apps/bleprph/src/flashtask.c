@@ -9,6 +9,8 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#include "flashtask.h"
+
 #include <SST26/SST26.h>
 
 #include "mcu/nrf51_hal.h"
@@ -16,6 +18,14 @@
 
 static volatile int g_task1_loops;
 
+/* FIFO global definition between gatt service task and flash task */
+array_type FIFO_task[FIFO_TASK_HEIGHT];
+
+FIFO_task_reader_type FIFO_task_reader = {
+    .maxcnt = FIFO_TASK_WIDTH,
+    .ptr    = (uint32_t)&FIFO_task,
+    .fline  = 0
+};
 
 /* New task for the memory management */
 void
@@ -41,26 +51,32 @@ flash_task_handler(void *arg)
     my_sst26_dev->spi_cfg = &spi_cfg;
     my_sst26_dev->ss_pin = spi_cfg.ss_pin;
 
-    /*
+    
     int rc;
     rc = sst26_init((struct hal_flash *) my_sst26_dev);
     if (rc) {
         // XXX: error handling 
     }
-    */
+    
 
     //static uint8_t warmtest = 0xaa;
-
     //sst26_write((struct hal_flash *) my_sst26_dev, 0, &warmtest, 1);
-
     //sst26_write((struct hal_flash *) my_sst26_dev, addr, buf, len);
     //sst26_read((struct hal_flash *) my_sst26_dev, addr, buf, len);
+
+    static uint32_t addr = 0;
 
     while (1) {
         ++g_task1_loops;
 
-        /* Wait one second */
-        os_time_delay(OS_TICKS_PER_SEC);
+
+        if(FIFO_task_reader.fline != 0){
+            sst26_write((struct hal_flash *) my_sst26_dev, addr, &FIFO_task[FIFO_task_reader.fline - 1], FIFO_TASK_WIDTH);
+            -- FIFO_task_reader.fline;
+            ++ addr;
+        }
+        /* Wait 1/4 second */
+        os_time_delay(OS_TICKS_PER_SEC/6);
 
 
 

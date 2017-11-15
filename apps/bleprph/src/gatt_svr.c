@@ -26,15 +26,56 @@
 #include "host/ble_uuid.h"
 #include "bleprph.h"
 
-#include "hal/hal_uart.h"
+/* Include for SPI and LCD driver */
+#include <hal/hal_spi.h>
+#include "lcd/lcd.h"
+#include "lcd/st7735.h"
+#include "lcd/stm32_adafruit_lcd.h"
+#include "hal/hal_gpio.h"
+// #include "mcu/nrf51_hal.h"
 
-#define BUFSIZE 100
+#include "flashtask.h"
+
+#include <SST26/SST26.h>
+#include "mcu/nrf51_hal.h"
+
+// SPI for LCD
+static struct hal_spi_settings screen_SPI_settings = {
+    .data_order = HAL_SPI_MSB_FIRST,
+    .data_mode  = HAL_SPI_MODE3,
+    .baudrate   = 8000, // max 8000
+    .word_size  = HAL_SPI_WORD_SIZE_8BIT,
+};
+
+// SPI for memory settings
+struct nrf51_hal_spi_cfg spi_cfg = {
+    .sck_pin      = 24 ,
+    .mosi_pin     = 21,
+    .miso_pin     = 22,
+    .ss_pin       = 23 
+};
+struct sst26_dev *my_sst26_dev = NULL;
+
+
+uint8_t rxbuf[5];
+
+// GPIO declaration
+int g_led_pin;
+int ncs_lcd;
+int sck_lcd;  
+int mosi_lcd;  
+int dc_lcd; 
+int pwm_lcd; 
+
+// SPI MEMORY TEST
+void SPI_MEMORY_init(void);
+
+#define MESSAGE_SIZE 128
+//uint8_t databuf[25];
 
 // Static value for write and read process 
-static uint32_t gatt_svr_data_trans[20];
+static uint8_t gatt_svr_data_trans[MESSAGE_SIZE];
 
-static uint8_t buffer[BUFSIZE];
-static uint8_t data_pos=0;
 
 /*** UUID for custom Bluetooth service and characteristic */ 
 // Service  497e3f64-2806-11e7-93ae-92361f002671
@@ -101,6 +142,7 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
 {
     const ble_uuid_t *uuid;
     int rc;
+    //static int i=0;
 
     uuid = ctxt->chr->uuid;
 
@@ -111,8 +153,9 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
     if (ble_uuid_cmp(uuid, &gatt_svr_chr_todoo_trans_uuid.u) == 0) {
         switch (ctxt->op) {
         case BLE_GATT_ACCESS_OP_READ_CHR :
-            rc = os_mbuf_append(ctxt->om, &gatt_svr_data_trans,
+            rc = os_mbuf_append(ctxt->om, &gatt_svr_data_trans[0],
                                 sizeof gatt_svr_data_trans);
+
             return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
         case BLE_GATT_ACCESS_OP_WRITE_CHR :
@@ -120,15 +163,49 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                                     1, //sizeof gatt_svr_data_trans
                                     sizeof gatt_svr_data_trans,
                                     &gatt_svr_data_trans[0], NULL);
-            /* Save data in buffer */
-            buffer[data_pos]=gatt_svr_data_trans[data_pos];
-            /* write to UART with blocking */
-            hal_uart_blocking_tx(0, buffer[data_pos]);
-            ++data_pos;
-            if (data_pos==BUFSIZE)
-            {
-                data_pos=0;
-            }
+            
+            
+            // TEST WITH FIFO
+            memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            FIFO_task_reader.fline ++;
+
+            // TEST WITH MEMORY
+            //sst26_write((struct hal_flash *) my_sst26_dev, i, &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            //i+=MESSAGE_SIZE;
+
+            // TEST WITH LCD
+            // LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            
+            // OTHER TEST WITH LCD
+            //BSP_LCD_DisplayChar(40, 40, gatt_svr_data_trans[0]);
+            //BSP_LCD_DisplayChar(50, 50, gatt_svr_data_trans[1]);
+
+            /* Write pixel on screen */       
+
+            //st7735_SetCursor(50+i, 50);
+            //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[0], 1);
+            //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[1], 1);
+
+            //databuf[i]=gatt_svr_data_trans;
+            //i++;
+            //if(i>1){
+                
+                //i=0;
+                /*
+                for(i=0;i<128*30;i++){
+                    LCD_IO_WriteMultipleData((uint8_t*)databuf, 2);
+                }
+                databuf[0]=0x61;
+                databuf[1]=0x62;
+                for(i=0;i<128*30;i++){
+                    LCD_IO_WriteMultipleData((uint8_t*)databuf, 2);
+                }
+                i=0;
+                BSP_LCD_DisplayChar(50, 40, databuf[0]);
+                BSP_LCD_DisplayChar(50, 50, databuf[1]);
+                */
+            //}
+
             return rc;
 
         default:
@@ -191,6 +268,142 @@ gatt_svr_init(void)
     if (rc != 0) {
         return rc;
     }
+    
+    // SPI_LCD_init(); // FOR LCD TEST
+    SPI_MEMORY_init();
 
     return 0;
+}
+
+void SPI_MEMORY_init(void){
+    static uint8_t warmtest = 0xaa;
+    my_sst26_dev = sst26_default_config();
+    my_sst26_dev->spi_num = 0;
+    my_sst26_dev->spi_cfg = &spi_cfg;
+    my_sst26_dev->ss_pin = spi_cfg.ss_pin;
+
+    int rc;
+    rc = sst26_init((struct hal_flash *) my_sst26_dev);
+    if (rc) {
+        // XXX: error handling 
+    }
+
+    sst26_write((struct hal_flash *) my_sst26_dev, 0, &warmtest, 1);
+}
+
+
+void SPI_LCD_init(void){    
+    /* LCD configuration when caracteristic is read */
+    hal_spi_disable(1);
+    hal_spi_config(1, &screen_SPI_settings);
+    hal_spi_enable(1);
+    
+    g_led_pin = LED_BLINK_PIN;
+    ncs_lcd=nCS_LCD;
+    sck_lcd=SCK_LCD;  
+    mosi_lcd=MOSI_LCD; 
+    dc_lcd=DC_LCD;
+    pwm_lcd=PWM_LCD;
+
+    hal_gpio_init_out(g_led_pin, 1);
+    hal_gpio_init_out(ncs_lcd, 1);
+    hal_gpio_init_out(sck_lcd, 1);
+    hal_gpio_init_out(mosi_lcd, 1);
+    hal_gpio_init_out(dc_lcd, 1);
+    hal_gpio_init_out(pwm_lcd, 1);
+
+    st7735_DisplayOff();
+    BSP_LCD_Init();
+    st7735_DisplayOn();
+
+    BSP_LCD_Clear(LCD_COLOR_RED);
+    
+    //st7735_DisplayOff();
+    BSP_LCD_Clear(LCD_COLOR_GREEN);
+    //st7735_DisplayOn();
+
+    BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+
+    st7735_SetDisplayWindow(0, 0, 128, 128);
+    
+    st7735_WriteReg(LCD_REG_54, 0x48);
+    st7735_SetCursor(0, 0);  
+
+    // Set LCD ready to receive pixels
+    //st7735_SetDisplayWindow(50, 50, 128, 128);
+
+    /* Set GRAM write direction and BGR = 0 */
+    /* Memory access control: MY = 0, MX = 1, MV = 0, ML = 0 */
+    //st7735_WriteReg(LCD_REG_54, 0x48);
+/*
+    //uint8_t data[MESSAGE_SIZE];
+    //int i;
+    for(i=0;i<20;i++){
+        data[i]=0xCD;
+        //BSP_LCD_DrawPixel(50+i, 50, data[1]);
+        st7735_SetCursor(50+i, 50);
+        LCD_IO_WriteMultipleData(&data[0], 1);
+        LCD_IO_WriteMultipleData(&data[1], 1);
+    }
+    //LCD_IO_WriteMultipleData((uint8_t*)&data[0], MESSAGE_SIZE);
+*/
+}
+
+void LCD_IO_Init(void){
+	
+	hal_gpio_write(pwm_lcd, 1);
+	/* LCD chip select high */
+	hal_gpio_write(ncs_lcd, 1); //LCD_CS_HIGH();
+}
+void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
+	/*Send the data by SPI1 (could be adapted by changing the hspiX)*/
+    uint32_t j=0;
+    
+	/* Reset LCD control line CS */
+	hal_gpio_write(ncs_lcd, 0);
+
+	/* Set LCD data/command line DC to high */
+    hal_gpio_write(dc_lcd, 1);
+
+	/* Send Command */
+	/* While the SPI in TransmitReceive process, user can transmit data through
+         "pData" buffer */
+
+    if(pData_numb==1){
+        hal_spi_txrx(1, pData, rxbuf, 1);
+    }
+    else{
+        for(j=0;j<pData_numb;j+=2){
+            //send_8bit_serial(pData+j);
+            hal_spi_txrx(1, pData+j+1, rxbuf, 1);
+            hal_spi_txrx(1, pData+j, rxbuf, 1);
+        }
+    }
+
+
+	/* Deselect : Chip Select high */
+	hal_gpio_write(ncs_lcd, 1);
+}
+void LCD_IO_WriteReg(uint8_t Reg){
+	/*Send the register address by SPI1 (could be adapted by changing the hspiX)*/
+
+	/* Reset LCD control line CS */
+	hal_gpio_write(ncs_lcd, 0);
+
+	/* Set LCD data/command line DC to Low */
+	hal_gpio_write(dc_lcd, 0);
+
+	/* Send Command */
+	/* While the SPI in TransmitReceive process, user can transmit data through
+	     "Reg" buffer*/
+        //send_8bit_serial(&Reg);
+        hal_spi_txrx(1, &Reg, rxbuf, 1);
+
+	/* Deselect : Chip Select high */
+	hal_gpio_write(ncs_lcd, 1);
+}
+void LCD_Delay(uint32_t delay){
+    
+    os_time_delay(delay);
 }

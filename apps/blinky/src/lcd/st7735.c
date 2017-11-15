@@ -502,7 +502,7 @@ void st7735_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
   
   /* Set GRAM write direction and BGR = 0 */
   /* Memory access control: MY = 0, MX = 1, MV = 0, ML = 0 */
-  st7735_WriteReg(LCD_REG_54, 0x40);
+  st7735_WriteReg(LCD_REG_54, 0x48); //0x40 0x68
 
   /* Set Cursor */
   st7735_SetCursor(Xpos, Ypos);  
@@ -511,7 +511,7 @@ void st7735_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
  
   /* Set GRAM write direction and BGR = 0 */
   /* Memory access control: MY = 1, MX = 1, MV = 0, ML = 0 */
-  st7735_WriteReg(LCD_REG_54, 0x68); //0xC0
+  st7735_WriteReg(LCD_REG_54, 0x48); //0x68 0xC0
 }
 
 /**

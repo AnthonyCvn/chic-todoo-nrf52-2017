@@ -22,6 +22,7 @@ int mosi_lcd;
 int dc_lcd; 
 int pwm_lcd; 
 
+uint8_t rxbuf[5];
 
 /* New task for the LCD management */
 void
@@ -45,15 +46,13 @@ screen_task_handler(void *arg)
     st7735_DisplayOff();
     BSP_LCD_Init();
 
+    BSP_LCD_Clear(LCD_COLOR_BLUE);
+
     while (1) {
         ++g_task1_loops;
 
         /* Wait one second */
         os_time_delay(OS_TICKS_PER_SEC);
-
-        /* Toggle the LED */
-        hal_gpio_toggle(g_led_pin);
-        BSP_LCD_DrawCircle(64, 64, 30);
     }
 }
 

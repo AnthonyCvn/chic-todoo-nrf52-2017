@@ -43,6 +43,7 @@ int sst26_read(const struct hal_flash *hal_flash_dev, uint32_t addr, void *buf,
                 uint32_t len);
 int sst26_write(const struct hal_flash *hal_flash_dev, uint32_t addr, const void *buf,
                  uint32_t len);
+
 // int sst26_erase_sector(const struct hal_flash *dev, uint32_t sector_address);
 
 int sst26_sector_erase(const struct hal_flash *hal_flash_dev,

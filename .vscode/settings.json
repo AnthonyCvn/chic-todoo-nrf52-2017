@@ -31,6 +31,9 @@
         "hal_i2c.h": "c",
         "mcu_sim.h": "c",
         "uart.h": "c",
-        "picture.h": "c"
+        "picture.h": "c",
+        "flashtask.h": "c",
+        "todoo_data.h": "c",
+        "inttypes.h": "c"
     }
 }

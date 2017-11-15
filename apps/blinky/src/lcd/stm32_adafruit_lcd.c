@@ -751,6 +751,78 @@ void BSP_LCD_FillCircle(uint16_t Xpos, uint16_t Ypos, uint16_t Radius)
 }
 
 /**
+  * @brief  Draws corner.
+  * @param  Radius: Corner radius
+  * @retval None
+  */
+void BSP_LCD_Filltopcorner(uint8_t radius){
+    uint8_t i;
+    uint8_t Corner_LUT[20] = {0,0,0,0,0,0,1,1,1,1,2,2,3,3,3,4,5,5,6,7};
+    
+    BSP_LCD_SetTextColor(DrawProp.TextColor);
+
+    // Left top corner
+    for(i=0;i<20;i++){
+      BSP_LCD_DrawHLine(0, 128 - radius + i, Corner_LUT[i]);
+    }
+
+    // Right top corner
+    for(i=0;i<20;i++){
+      BSP_LCD_DrawHLine(128 - Corner_LUT[i], 108+i, Corner_LUT[i]);
+    }
+}
+/**
+  * @brief  Draws loading bar.
+  * @param  Xpos: X position
+  * @param  Ypos: Y position
+  * @param  Orientation: Shape orientation
+  * @retval None
+  */
+  void BSP_LCD_FillLoading(uint16_t Xpos, uint16_t Ypos, Orientation Orient)
+  {  
+    uint8_t  i; 
+    uint8_t Length_LUT[20] = {11,10,9,8,7,6,6,5,5,5,5,5,5,6,6,7,8,9,10,11};
+    uint8_t CoinLength_LUT[20] = {20,18,16,14,12,11,9,8,7,6,4,4,3,2,1,1,0,0,0,0};
+    
+    BSP_LCD_SetTextColor(DrawProp.TextColor);
+    
+    switch(Orient){
+      case TOP:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawVLine(Xpos + i, Ypos+14-Length_LUT[i], Length_LUT[i]);
+        }
+      break;
+      case BOTTOM:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawVLine(Xpos + i, Ypos, Length_LUT[i]);
+        }
+      break;
+      case LEFT:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawHLine(Xpos, Ypos+i, Length_LUT[i]);
+        }
+      break;
+      case RIGHT:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawHLine(Xpos+14-Length_LUT[i], Ypos+i, Length_LUT[i]);
+        }
+      break;
+      case TOPLEFT:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawVLine(Xpos+i, Ypos, 8+CoinLength_LUT[i]);
+        }
+      break;
+      case TOPRIGHT:
+        for(i=0;i<20;i++){
+          BSP_LCD_DrawHLine(Xpos, Ypos+i, 8+CoinLength_LUT[19-i]);
+        }
+      break;
+      default:  return;     
+      break;
+    }
+  }
+
+/**
   * @brief  Draws a full poly-line (between many points).
   * @param  Points: Pointer to the points array
   * @param  PointCount: Number of points

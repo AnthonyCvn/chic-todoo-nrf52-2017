@@ -1,6 +1,9 @@
 #include <hal/hal_flash_int.h>
 #include <hal/hal_spi.h>
 
+volatile uint8_t min,sec,hour, day;
+volatile uint32_t current_task_time;
+
 /* My Task */
 struct os_task screentask;
 /* My Task Stack */
