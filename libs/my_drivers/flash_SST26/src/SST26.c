@@ -42,6 +42,7 @@
 #define STATUS_BUSY     (1 << 7)
 
 
+
 static inline void sst26_write_enable(struct sst26_dev *dev);
 static inline void sst26_write_address(struct sst26_dev *dev, uint32_t address);
 

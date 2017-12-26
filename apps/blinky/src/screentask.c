@@ -16,13 +16,31 @@
 /* SPI */
 #include <hal/hal_spi.h>
 #include <SST26/SST26.h>
-#include "mcu/nrf51_hal.h"
+#include "mcu/nrf52_hal.h"
 #include "screentask.h"
 #include "lcd/lcd.h"
 #include "lcd/st7735.h"
 #include "lcd/stm32_adafruit_lcd.h"
 
+/* Todoo structure */
+#include "todoo_data.h"
+
 #define BAR_LENGTH 436
+
+// Address of fix images in external SPI flash memory
+#define PIC_BLUETOOTH_ADV_ADD      (0x010000)
+#define PIC_BLUETOOTH_BRAND_ADD    (0x018042)
+#define PIC_BLUETOOTH_SHOWER_ADD   (0x020854)
+#define PIC_BLUETOOTH_TSHIRT_ADD   (0x024516)
+
+
+/* Screen */
+#define nCS_LCD   (19)
+#define SCK_LCD   (16)
+#define MOSI_LCD  (17)
+#define DC_LCD    (15)
+#define PWM_LCD   (14)
+
 
 static volatile int g_task1_loops;
 
@@ -43,53 +61,88 @@ int pwm_lcd;
 
 uint8_t rxbuf[5];
 
-void refresh_time_ptr(uint8_t vert_pos, uint8_t second,uint8_t minute,uint8_t hour, uint8_t * ptr){
-    int i;
-    for(i=0;i<vert_pos;i++){
+void refresh_time_ptr(uint8_t hor_pos,uint32_t current_task_time, uint8_t * ptr){
+    uint8_t i, h, m, s;
+    for(i=0;i<hor_pos;i++){
         ptr[i]=' ';
     }
 
-    ptr[i]=hour/10+48;
-    ptr[i+1]=hour%10+48;
-    ptr[i+2]=':';
-    ptr[i+3]=minute/10+48;
-    ptr[i+4]=minute%10+48;
-    ptr[i+5]=':';
-    ptr[i+6]=second/10+48;
-    ptr[i+7]=second%10+48;
+    h = current_task_time/3600;
+    m = (current_task_time % 3600)/60;
+    s = (current_task_time % 3600) % 60;
+  
+    ptr[hor_pos]    = h/10+48;
+    ptr[hor_pos+1]  = h%10+48;
+    ptr[hor_pos+2]  =':';
+    ptr[hor_pos+3]  = m/10+48;
+    ptr[hor_pos+4]  = m%10+48;
+    ptr[hor_pos+5]  =':';
+    ptr[hor_pos+6]  = s/10+48;
+    ptr[hor_pos+7]  = s%10+48;
 
-}
-
-uint32_t refresh_task_percent(uint32_t current_task_time, uint8_t second, uint8_t minute, uint8_t hour){
-    uint32_t second_left, percent;
-    second_left = second + 60 * minute + 3600 * hour;
-
-    if(current_task_time > second_left){
-        percent = ((current_task_time - second_left)*100)/current_task_time;
-    }else{
-        percent = 0;
+    for(i=hor_pos+8;i<20;i++){
+        ptr[i]=' ';
     }
 
-    return percent;
+/*
+    ptr[i]=todoo->parameters->time[B_HOUR]/10+48;
+    ptr[i+1]=todoo->parameters->time[B_HOUR]%10+48;
+    ptr[i+2]=':';
+    ptr[i+3]=todoo->parameters->time[B_MIN]/10+48;
+    ptr[i+4]=todoo->parameters->time[B_MIN]%10+48;
+    ptr[i+5]=':';
+    ptr[i+6]=todoo->parameters->time[B_SEC]/10+48;
+    ptr[i+7]=todoo->parameters->time[B_SEC]%10+48;
+*/
+}
+
+uint32_t refresh_task_percent(uint32_t current_task_time, uint32_t total_task_time){
+
+    return (100 - ((total_task_time - current_task_time)*100)/total_task_time);
+}
+
+/* 
+*  act_code[0] = activity ...
+*  act_code[1] = 
+*/ 
+void which_activity(struct Todoo_data *todoo, uint8_t* act_code){
+    uint8_t i;
+
+    for(i=0;i<MAX_ACTIVITY;i++){
+        if(todoo->activity[i].day == todoo->parameters->day){ 
+            act_code[0] = i;
+            break;
+        }
+    }    
+}
+
+/* 
+*  Calculate the time in second of the current task
+*/ 
+int current_task_time_calculation(struct Todoo_data *todoo, uint16_t activity_num){
+    uint32_t start, end;
+
+    end =   todoo->activity[activity_num].end_time[B_SEC] + 60 * todoo->activity[activity_num].end_time[B_MIN] + 3600 * todoo->activity[activity_num].end_time[B_HOUR];
+    start = todoo->activity[activity_num].start_time[B_SEC] + 60 * todoo->activity[activity_num].start_time[B_MIN] + 3600 * todoo->activity[activity_num].start_time[B_HOUR];
+
+    return end-start;
 }
 
 void draw_time_bar(uint32_t task_percent){
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    
-    //BSP_LCD_FillRect(19, 0, 109, 19);
-    //BSP_LCD_FillRect(109, 0, 19, 128);
-    //BSP_LCD_FillRect(19, 109, 109, 19);
 
     uint32_t temp;
 
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+
     if(task_percent>70){
 
-        temp = 280-(13*task_percent)/5;
+        temp = 281-(13*task_percent)/5;
         BSP_LCD_FillLoading(0, (uint16_t) temp, BOTTOM);
+        BSP_LCD_FillRect(0, 21, 20, temp-20);
     
     }else if(task_percent>69){
 
-        BSP_LCD_FillRect(0, 100, 20, 7);
+        BSP_LCD_FillRect(0, 21, 20, 86);
 
     }else if(task_percent>68){
         
@@ -102,11 +155,12 @@ void draw_time_bar(uint32_t task_percent){
     }else if(task_percent>30){
 
         temp = 175-(13*task_percent)/5;
-        BSP_LCD_FillLoading((uint16_t) temp, 108,LEFT); 
+        BSP_LCD_FillLoading((uint16_t) temp, 108,LEFT);
+        BSP_LCD_FillRect(0, 108, temp, 20);
 
     }else if(task_percent>29){
 
-        BSP_LCD_FillRect(100, 108, 8, 20);
+        BSP_LCD_FillRect(0, 108, 108, 20);
 
     }else if(task_percent>28){
 
@@ -114,8 +168,9 @@ void draw_time_bar(uint32_t task_percent){
 
     }else{
 
-        temp = 39+(13*task_percent)/5;
+        temp = 35+(13*task_percent)/5;
         BSP_LCD_FillLoading(108, (uint16_t) temp, TOP);
+        BSP_LCD_FillRect(108, temp+14, 20, 128-temp);
 
     }
 
@@ -123,14 +178,43 @@ void draw_time_bar(uint32_t task_percent){
 
 }
 
+void initialize_screen_theme_shower(const struct hal_flash * sst26_dev){
+
+    //ext_memory_bitmap_to_LCD(20, 20, PIC_BLUETOOTH_SHOWER_ADD, (struct hal_flash *) sst26_dev);
+    
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    BSP_LCD_FillRect(0, 0, 128, 20);   //Bottom
+    BSP_LCD_FillRect(108, 0, 20, 128); //Right
+    BSP_LCD_FillRect(20, 108, 88, 20); //Top
+    BSP_LCD_FillRect(0, 20, 20, 108);   //Left
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_FillLoading(0, 21, BOTTOM);
+    BSP_LCD_FillLoading(0, 23, BOTTOM);
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_SetBackColor(LCD_COLOR_RED);
+}
+
+void initialize_screen_bar(){
+
+    BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    BSP_LCD_FillRect(0, 0, 128, 20);   //Bottom
+    BSP_LCD_FillRect(108, 0, 20, 128); //Right
+    BSP_LCD_FillRect(20, 108, 88, 20); //Top
+    BSP_LCD_FillRect(0, 20, 20, 108);   //Left
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_FillLoading(0, 21, BOTTOM);
+    BSP_LCD_FillLoading(0, 23, BOTTOM);
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    BSP_LCD_SetBackColor(LCD_COLOR_RED);
+}
 
 /* New task for the LCD management */
 void
 screen_task_handler(void *arg)
 {
-    hal_spi_disable(1);
-    hal_spi_config(1, &screen_SPI_settings);
-    hal_spi_enable(1);
+    hal_spi_disable(0);
+    hal_spi_config(0, &screen_SPI_settings);
+    hal_spi_enable(0);
 
 
     /*  GPIO configuration. */
@@ -146,11 +230,14 @@ screen_task_handler(void *arg)
     hal_gpio_init_out(sck_lcd, 1);
     hal_gpio_init_out(mosi_lcd, 1);
     hal_gpio_init_out(dc_lcd, 1);
-    hal_gpio_init_out(pwm_lcd, 1);
+    hal_gpio_init_out(pwm_lcd, 0);
 
+
+    os_time_delay(OS_TICKS_PER_SEC);
     st7735_DisplayOff();
     BSP_LCD_Init();
-    //st7735_DisplayOn();
+
+    st7735_DisplayOn();
 
     //BSP_LCD_Clear(LCD_COLOR_RED);
     //BSP_LCD_Clear(LCD_COLOR_GREEN);
@@ -164,12 +251,12 @@ screen_task_handler(void *arg)
 
 
 
-    static const uint8_t SPI_SCK_PIN  = 24;
-    static const uint8_t SPI_MOSI_PIN = 21;
-    static const uint8_t SPI_MISO_PIN = 22;
-    static const uint8_t SPI_SS_PIN   = 23;
+    static const uint8_t SPI_SCK_PIN  = 16;
+    static const uint8_t SPI_MOSI_PIN = 17;
+    static const uint8_t SPI_MISO_PIN = 18;
+    static const uint8_t SPI_SS_PIN   = 20;
   
-    struct nrf51_hal_spi_cfg spi_cfg = {
+    struct nrf52_hal_spi_cfg spi_cfg = {
         .sck_pin      = SPI_SCK_PIN ,
         .mosi_pin     = SPI_MOSI_PIN,
         .miso_pin     = SPI_MISO_PIN,
@@ -203,7 +290,7 @@ screen_task_handler(void *arg)
 
 
     /////////////////////////////////////////////////////////////////////////////////////////// WRITE IN MEMORY
-
+/*
     os_time_delay(OS_TICKS_PER_SEC/2);
 
     //sst26_chip_erase((struct hal_flash *) my_sst26_dev);
@@ -234,7 +321,7 @@ screen_task_handler(void *arg)
     BSP_LCD_Clear(LCD_COLOR_BLUE);
     os_time_delay(OS_TICKS_PER_SEC/2);
     ext_memory_bitmap_to_LCD(20, 20, PIC_BLUETOOTH_TSHIRT_ADD, (struct hal_flash *) my_sst26_dev);
-
+*/
     /////////////////////////////////////////////////////////////////////////////////////////// WRITE IN MEMORY
 
 
@@ -245,9 +332,9 @@ screen_task_handler(void *arg)
     //BSP_LCD_DrawBitmap(0, 0, (uint8_t *)brand_128x128);
 
     //os_time_delay(OS_TICKS_PER_SEC);
-    os_time_delay(OS_TICKS_PER_SEC*4);
+    //os_time_delay(OS_TICKS_PER_SEC);
     //BSP_LCD_DrawBitmap(20, 20, (uint8_t *)dress_up_88x88);
-    os_time_delay(OS_TICKS_PER_SEC*4);
+    //os_time_delay(OS_TICKS_PER_SEC);
 
     //BSP_LCD_DrawBitmap(20, 20, (uint8_t *)shower_88x88);
     //os_time_delay(OS_TICKS_PER_SEC);
@@ -259,34 +346,29 @@ screen_task_handler(void *arg)
 
     //unsigned char pbmp[100];
 
+    
+    static STATE state = boot;
+
+    static uint8_t state_counter=0;
+    static uint8_t new_activity=0;
+    static uint8_t past_activity=0;
+
+    //uint8_t adv_request[] = {' ',' ',' ', ' ',' ', 'B', 'l', 'u','e', 't', 'o', 'o','t', 'h'};
+
     uint8_t ptr_clock[10];
     uint32_t task_percent;
-    current_task_time = 100; // in second
-
-    BSP_LCD_SetTextColor(LCD_COLOR_RED);
-
-    BSP_LCD_FillRect(0, 0, 128, 20);   //Bottom
-    BSP_LCD_FillRect(108, 20, 20, 108); //Right
-    BSP_LCD_FillRect(20, 108, 88, 20); //Top
-    BSP_LCD_FillRect(0, 20, 20, 108);   //Left
-
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    BSP_LCD_FillLoading(0, 21, BOTTOM);
-    BSP_LCD_FillLoading(0, 23, BOTTOM);
+    uint32_t task_time = 0;
 
     //BSP_LCD_Filltopcorner(20);
 
-    BSP_LCD_FillCircle(118, 36, 8);
+    //BSP_LCD_FillCircle(118, 36, 8);
 
-    BSP_LCD_SetTextColor(LCD_COLOR_RED);
-    BSP_LCD_FillCircle(118, 36, 5);
+    //BSP_LCD_SetTextColor(LCD_COLOR_RED);
+    //BSP_LCD_FillCircle(118, 36, 5);
 
-    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-    BSP_LCD_SetBackColor(LCD_COLOR_RED);
 
     while (1) {
         ++g_task1_loops;
-
         /* Wait one second */
         /*
         for(k=0;k<16;k++){
@@ -303,18 +385,7 @@ screen_task_handler(void *arg)
             //BSP_LCD_Clear(LCD_COLOR_BLUE);
         
         //ext_memory_bitmap_to_LCD(0, 0, 0, (struct hal_flash *) my_sst26_dev);
-        os_time_delay(OS_TICKS_PER_SEC/4);
-
-        refresh_time_ptr(2 , sec, min, hour, &ptr_clock[0]);
-
-        task_percent = refresh_task_percent(current_task_time, sec, min, hour);
-
-        draw_time_bar(task_percent);
-
-        BSP_LCD_DisplayStringAtLine(7, &ptr_clock[0]);
-
-
-
+    
 
         //sst26_read((struct hal_flash *) my_sst26_dev, 0, pbmp, 10);
 
@@ -331,6 +402,61 @@ screen_task_handler(void *arg)
         BSP_LCD_DrawCircle(64, 64, 80);
         BSP_LCD_DrawCircle(64, 64, 90);
         */
+
+        //BSP_LCD_Clear(LCD_COLOR_BLUE);
+        //BSP_LCD_DrawBitmap(20,20, brand_128x128);
+        /* 
+        * Screen state management  
+        * 
+        */
+        new_activity++;
+        past_activity++;
+        os_time_delay(OS_TICKS_PER_SEC/6);
+        ++state_counter;
+        switch(state) {
+            case boot :             
+                if(state_counter>3){
+                    state = ble_request;
+                }
+                if(state_counter == 1){
+                    BSP_LCD_DrawBitmap(0,0,brand_128x128);
+                    //BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+                    //BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
+                    //BSP_LCD_SetFont(&Font12);
+                    //BSP_LCD_DisplayStringAtLine(9, adv_request);
+                    //ext_memory_bitmap_to_LCD(0, 0, PIC_BLUETOOTH_BRAND_ADD, (struct hal_flash *) my_sst26_dev);
+                }
+                break;
+                
+            case ble_request :
+                if(state_counter>15){
+                    //initialize_screen_theme_shower((struct hal_flash *) my_sst26_dev);
+                    //BSP_LCD_DrawBitmap(20,20,shower_88x88);
+                    state = shows_activity;
+                    task_time = current_task_time_calculation(todoo, 0);
+                    current_task_time = task_time;
+                    BSP_LCD_DrawBitmap(20,20,dress_up_88x88);
+                    //BSP_LCD_DrawBitmap(20,20,(uint8_t*)shower_88x88);
+                    initialize_screen_bar();
+                }
+
+                break;    
+            case shows_activity :            
+                refresh_time_ptr(5 , current_task_time, &ptr_clock[0]);
+                task_percent = refresh_task_percent(current_task_time, task_time);
+                draw_time_bar(task_percent);
+                BSP_LCD_SetFont(&Font12);
+                BSP_LCD_DisplayStringAtLine(9, &ptr_clock[0]);
+                
+                if(!task_percent){
+                    state = boot;
+                    state_counter=0;
+                }
+                break;
+              
+            default :
+                break;
+        }
     }
 }
 
@@ -458,13 +584,15 @@ void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
          "pData" buffer */
 
     if(pData_numb==1){
-        hal_spi_txrx(1, pData, rxbuf, 1);
+        //send_8bit_serial(pData);
+        hal_spi_txrx(0, pData, rxbuf, 1);
     }
     else{
         for(j=0;j<pData_numb;j+=2){
+            //send_8bit_serial(pData+j+1);
             //send_8bit_serial(pData+j);
-            hal_spi_txrx(1, pData+j+1, rxbuf, 1);
-            hal_spi_txrx(1, pData+j, rxbuf, 1);
+            hal_spi_txrx(0, pData+j+1, rxbuf, 1);
+            hal_spi_txrx(0, pData+j, rxbuf, 1);
         }
     }
 
@@ -485,7 +613,7 @@ void LCD_IO_WriteReg(uint8_t Reg){
 	/* While the SPI in TransmitReceive process, user can transmit data through
 	     "Reg" buffer*/
         //send_8bit_serial(&Reg);
-        hal_spi_txrx(1, &Reg, rxbuf, 1);
+        hal_spi_txrx(0, &Reg, rxbuf, 1);
 
 	/* Deselect : Chip Select high */
 	hal_gpio_write(ncs_lcd, 1);

@@ -11,7 +11,7 @@
 
 #include <SST26/SST26.h>
 
-#include "mcu/nrf51_hal.h"
+#include "mcu/nrf52_hal.h"
 
 
 static volatile int g_task1_loops;
@@ -27,7 +27,7 @@ flash_task_handler(void *arg)
     static const uint8_t SPI_MISO_PIN = 22;
     static const uint8_t SPI_SS_PIN   = 23;
   
-    struct nrf51_hal_spi_cfg spi_cfg = {
+    struct nrf52_hal_spi_cfg spi_cfg = {
         .sck_pin      = SPI_SCK_PIN ,
         .mosi_pin     = SPI_MOSI_PIN,
         .miso_pin     = SPI_MISO_PIN,

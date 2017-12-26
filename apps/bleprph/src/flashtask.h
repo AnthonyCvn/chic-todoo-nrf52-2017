@@ -12,6 +12,12 @@ void flash_task_handler(void *arg);
 #define FIFO_TASK_WIDTH  128
 #define FIFO_TASK_HEIGHT 80 
 
+#define nCS_LCD   (19)
+#define SCK_LCD   (16)
+#define MOSI_LCD  (17)
+#define DC_LCD    (15)
+#define PWM_LCD   (14)
+
 typedef struct array
 {
     uint8_t buffer[FIFO_TASK_WIDTH ];
@@ -26,4 +32,3 @@ typedef struct task_reader
 
 extern array_type FIFO_task[FIFO_TASK_HEIGHT];
 extern FIFO_task_reader_type FIFO_task_reader;
-

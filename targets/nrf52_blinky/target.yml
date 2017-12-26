@@ -1,0 +1,4 @@
+### Target: targets/nrf52_blinky
+target.app: "apps/blinky"
+target.bsp: "@apache-mynewt-core/hw/bsp/rb-nano2"
+target.build_profile: "debug"

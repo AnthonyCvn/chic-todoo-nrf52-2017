@@ -66,6 +66,68 @@
             "taskName": "load_blinky",
             "args": ["load", "blinky"],
             "suppressTaskName":true
+        },
+        {
+            "taskName": "build_nrf52_boot",
+            "args": ["build", "nrf52_boot"],
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "nrf52_build_myperiph",
+            "args": ["build", "nrf52_myperiph"],
+            "isBuildCommand": true,  
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "create_nrf52_myperiph",
+            "args": ["create-image", "nrf52_myperiph", "1.0.0"],
+            "suppressTaskName":true
+        },
+        {
+            "taskName": "run_nrf52_myperiph",
+            "args": ["run", "nrf52_myperiph", "1.0.0","-n"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "debug_nrf52_myperiph",
+            "args": ["debug", "nrf52_myperiph", "-n"],
+            "suppressTaskName": true
+        },
+                {
+            "taskName": "load_nrf52_boot",
+            "args": ["load", "nrf52_boot"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "load_nrf52_myperiph",
+            "args": ["load", "nrf52_myperiph"],
+            "suppressTaskName":true
+        },
+        {
+            "taskName": "build_nrf52_blinky",
+            "args": ["build", "nrf52_blinky"],
+            "isBuildCommand": true,  
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "create_nrf52_blinky",
+            "args": ["create-image", "nrf52_blinky", "1.0.0"],
+            "suppressTaskName":true
+        },
+        {
+            "taskName": "run_nrf52_blinky",
+            "args": ["run", "nrf52_blinky", "1.0.0","-n"],
+            "suppressTaskName":true
+        }, 
+        {
+            "taskName": "debug_nrf52_blinky",
+            "args": ["debug", "nrf52_blinky", "-n"],
+            "suppressTaskName": true
+        },
+        {
+            "taskName": "load_nrf52_blinky",
+            "args": ["load", "nrf52_blinky"],
+            "suppressTaskName":true
         }
     ]
 }

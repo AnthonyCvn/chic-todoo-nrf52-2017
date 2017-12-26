@@ -49,16 +49,21 @@
 static volatile uint8_t g_task1_loops;
 int g_led_pin;
 
-///////////////////////////////////////////////////////// Todoo structure
+///////////////////////////////////////////////////////// Todoo structure and state
 #include "todoo_data.h"
 
 struct Todoo_data *todoo = NULL;
 static void init_structure_exemple(struct Todoo_data *todoo);
 
+#define CONFIG_GPIO_AS_PINRESET
 // 1 /////////////////////////////////////////////////// Definition and calback for timer and GPIO interuption
-// Define button and test point pin
-#define BUTTON_ADV_PIN  8
-#define TEST_POINT_6  15
+// Define button and LED
+#define LED_BLUE    7
+#define LED_GREEN   8
+#define LED_RED     9
+#define BUTTON_ADV_PIN  25
+#define STANDBY    26
+
 // Timer task number and stask size.
 #define MY_TIMER_INTERRUPT_TASK_PRIO  4
 #define MY_TIMER_INTERRUPT_TASK_STACK_SZ    512
@@ -85,18 +90,16 @@ static void my_timer_ev_cb(struct os_event *ev)
 {
     assert(ev != NULL);
 
-    ++todoo->parameters->time[B_SEC];
-    if(sec>59){
-        todoo->parameters->time[B_SEC] = 0;
-        ++todoo->parameters->time[B_MIN];
-        if(min>59){
-            todoo->parameters->time[B_MIN] = 0;
-            ++todoo->parameters->time[B_HOUR];
-            if(hour>23){
-                todoo->parameters->time[B_HOUR] = 0;
-            }
-
-        }
+    todoo->parameters->time[B_SEC] = (todoo->parameters->time[B_SEC] + 1) % 60;   
+    if(!todoo->parameters->time[B_SEC]){   
+        todoo->parameters->time[B_MIN] = (todoo->parameters->time[B_MIN] + 1) % 60;   
+        if(!todoo->parameters->time[B_MIN]){
+            todoo->parameters->time[B_HOUR] = (todoo->parameters->time[B_HOUR] + 1) % 12;
+        }         
+    }     
+    
+    if(current_task_time > 0){
+        --current_task_time;
     }
 
     os_callout_reset(&my_callout, OS_TICKS_PER_SEC);
@@ -116,17 +119,19 @@ static void my_interrupt_ev_cb(struct os_event *ev)
 
     static uint8_t capture_time, logic_time_pressed = 0;
     
-    hal_gpio_write(TEST_POINT_6, 0);
+    hal_gpio_toggle(LED_BLUE);
 
+    
     if(logic_time_pressed == 0){
         capture_time = sec;
         logic_time_pressed = 1;
     }else{
         logic_time_pressed = 0;
         if((sec-capture_time) >= 8){
-            hal_gpio_write(TEST_POINT_6, 1);
+            //hal_gpio_write(LED_BLUE, 1);
         }
     }
+    
 }
 
 static void
@@ -148,7 +153,7 @@ init_todoo(void)
      */ 
     hal_gpio_irq_init(BUTTON_ADV_PIN, my_gpio_irq, NULL, HAL_GPIO_TRIG_RISING, HAL_GPIO_PULL_UP);  
     hal_gpio_irq_enable(BUTTON_ADV_PIN);
-    hal_gpio_init_out(TEST_POINT_6, 1);
+    hal_gpio_init_out(STANDBY, 1);
 
     /* 
      * Initialize the data structure todoo and allocate 
@@ -173,27 +178,23 @@ init_structure_exemple(struct Todoo_data *todoo){
     todoo->parameters->transition = 1;
     todoo->parameters->num_activity = 2;
 
-    todoo->parameters->date[0] = 15;
-    todoo->parameters->date[1] = 15;
-    todoo->parameters->date[2] = 15;
+    todoo->parameters->day = 0;
 
-    todoo->parameters->time[0] = 15;
-    todoo->parameters->time[1] = 15;
-    todoo->parameters->time[2] = 15;
+    todoo->parameters->time[B_HOUR] = 15;
+    todoo->parameters->time[B_MIN] = 15;
+    todoo->parameters->time[B_SEC] = 15;
 
 
     for(i=0;i<todoo->parameters->num_activity;i++){
-        todoo->activity[i].date[0] = 15;
-        todoo->activity[i].date[1] = 15;
-        todoo->activity[i].date[2] = 15;
+        todoo->activity[i].day = 0;
 
         todoo->activity[i].start_time[0] = 15;
-        todoo->activity[i].start_time[1] = 15 + 2*i;
-        todoo->activity[i].start_time[2] = 15;
+        todoo->activity[i].start_time[1] = 00 + 2*i;
+        todoo->activity[i].start_time[2] = 00;
 
         todoo->activity[i].end_time[0] = 15;
-        todoo->activity[i].end_time[1] = 16 + 2*i;
-        todoo->activity[i].end_time[2] = 15;
+        todoo->activity[i].end_time[1] = 20 + 2*i;
+        todoo->activity[i].end_time[2] = 00;
 
         todoo->activity[i].data_add = 17;
         todoo->activity[i].data_size = 17;
@@ -328,20 +329,25 @@ main(int argc, char **argv)
     // Task and interupt initialization for the Todoo app
     init_todoo();
 
+    /* For LED toggling */
+    int r_led_pin;
+    r_led_pin = LED_RED;
+    hal_gpio_init_out(r_led_pin, 0);
+
+    int g_led_pin;
+    g_led_pin = LED_GREEN;
+    hal_gpio_init_out(g_led_pin, 0);
+
+    int b_led_pin;
+    b_led_pin = LED_BLUE;
+    hal_gpio_init_out(b_led_pin, 0);
+
 
     while (1) {
         ++g_task1_loops;
-        
         /* Wait one second */
-        os_time_delay(OS_TICKS_PER_SEC);
-
-        /* Toggle the LED */
-        hal_gpio_toggle(g_led_pin);
-
-
+        os_time_delay(OS_TICKS_PER_SEC/4);
         //uart_hal_start_rx(struct uart_dev *dev);
-
-
         /*
         // Address: 0x550x55
         // RemainingCapacity():  0x0C and 0x0D
@@ -350,6 +356,15 @@ main(int argc, char **argv)
         result++;
         result--;
         */
+        //os_time_delay(OS_TICKS_PER_SEC);
+        //hal_gpio_toggle(r_led_pin);
+        os_time_delay(OS_TICKS_PER_SEC/4);
+        //hal_gpio_toggle(g_led_pin);
+        os_time_delay(OS_TICKS_PER_SEC/4);
+        //hal_gpio_toggle(b_led_pin);
+        os_time_delay(OS_TICKS_PER_SEC/4);
+
+
     }
     assert(0);
 

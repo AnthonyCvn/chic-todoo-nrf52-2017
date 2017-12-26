@@ -37,7 +37,7 @@
 #include "flashtask.h"
 
 #include <SST26/SST26.h>
-#include "mcu/nrf51_hal.h"
+#include "mcu/nrf52_hal.h"
 
 // SPI for LCD
 static struct hal_spi_settings screen_SPI_settings = {
@@ -48,11 +48,11 @@ static struct hal_spi_settings screen_SPI_settings = {
 };
 
 // SPI for memory settings
-struct nrf51_hal_spi_cfg spi_cfg = {
-    .sck_pin      = 24 ,
-    .mosi_pin     = 21,
-    .miso_pin     = 22,
-    .ss_pin       = 23 
+struct nrf52_hal_spi_cfg spi_cfg = {
+    .sck_pin      = 16 ,
+    .mosi_pin     = 17,
+    .miso_pin     = 18,
+    .ss_pin       = 20 
 };
 struct sst26_dev *my_sst26_dev = NULL;
 
@@ -166,15 +166,15 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
             
             
             // TEST WITH FIFO
-            memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
-            FIFO_task_reader.fline ++;
+            //memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            //FIFO_task_reader.fline ++;
 
             // TEST WITH MEMORY
             //sst26_write((struct hal_flash *) my_sst26_dev, i, &gatt_svr_data_trans[0], MESSAGE_SIZE);
             //i+=MESSAGE_SIZE;
 
             // TEST WITH LCD
-            // LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
             
             // OTHER TEST WITH LCD
             //BSP_LCD_DisplayChar(40, 40, gatt_svr_data_trans[0]);
@@ -269,8 +269,8 @@ gatt_svr_init(void)
         return rc;
     }
     
-    // SPI_LCD_init(); // FOR LCD TEST
-    SPI_MEMORY_init();
+    SPI_LCD_init(); // FOR LCD TEST
+    //SPI_MEMORY_init();
 
     return 0;
 }
@@ -294,9 +294,9 @@ void SPI_MEMORY_init(void){
 
 void SPI_LCD_init(void){    
     /* LCD configuration when caracteristic is read */
-    hal_spi_disable(1);
-    hal_spi_config(1, &screen_SPI_settings);
-    hal_spi_enable(1);
+    hal_spi_disable(0);
+    hal_spi_config(0, &screen_SPI_settings);
+    hal_spi_enable(0);
     
     g_led_pin = LED_BLINK_PIN;
     ncs_lcd=nCS_LCD;
@@ -310,7 +310,7 @@ void SPI_LCD_init(void){
     hal_gpio_init_out(sck_lcd, 1);
     hal_gpio_init_out(mosi_lcd, 1);
     hal_gpio_init_out(dc_lcd, 1);
-    hal_gpio_init_out(pwm_lcd, 1);
+    hal_gpio_init_out(pwm_lcd, 0);
 
     st7735_DisplayOff();
     BSP_LCD_Init();
@@ -371,13 +371,13 @@ void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
          "pData" buffer */
 
     if(pData_numb==1){
-        hal_spi_txrx(1, pData, rxbuf, 1);
+        hal_spi_txrx(0, pData, rxbuf, 1);
     }
     else{
         for(j=0;j<pData_numb;j+=2){
             //send_8bit_serial(pData+j);
-            hal_spi_txrx(1, pData+j+1, rxbuf, 1);
-            hal_spi_txrx(1, pData+j, rxbuf, 1);
+            hal_spi_txrx(0, pData+j+1, rxbuf, 1);
+            hal_spi_txrx(0, pData+j, rxbuf, 1);
         }
     }
 
@@ -398,7 +398,7 @@ void LCD_IO_WriteReg(uint8_t Reg){
 	/* While the SPI in TransmitReceive process, user can transmit data through
 	     "Reg" buffer*/
         //send_8bit_serial(&Reg);
-        hal_spi_txrx(1, &Reg, rxbuf, 1);
+        hal_spi_txrx(0, &Reg, rxbuf, 1);
 
 	/* Deselect : Chip Select high */
 	hal_gpio_write(ncs_lcd, 1);

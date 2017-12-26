@@ -34,6 +34,7 @@
         "picture.h": "c",
         "flashtask.h": "c",
         "todoo_data.h": "c",
-        "inttypes.h": "c"
+        "inttypes.h": "c",
+        "nrf52_hal.h": "c"
     }
 }
