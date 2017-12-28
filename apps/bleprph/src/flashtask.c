@@ -71,7 +71,7 @@ flash_task_handler(void *arg)
 
 
         if(FIFO_task_reader.fline != 0){
-            sst26_write((struct hal_flash *) my_sst26_dev, addr, &FIFO_task[FIFO_task_reader.fline - 1], FIFO_TASK_WIDTH);
+            //sst26_write((struct hal_flash *) my_sst26_dev, addr, &FIFO_task[FIFO_task_reader.fline - 1], FIFO_TASK_WIDTH);
             -- FIFO_task_reader.fline;
             ++ addr;
         }

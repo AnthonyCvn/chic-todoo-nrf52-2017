@@ -39,6 +39,13 @@
 #include <SST26/SST26.h>
 #include "mcu/nrf52_hal.h"
 
+#include "todoo_data.h"
+
+
+
+// Todoo structure to managae each activity
+struct Todoo_data *todoo = NULL;
+
 // SPI for LCD
 static struct hal_spi_settings screen_SPI_settings = {
     .data_order = HAL_SPI_MSB_FIRST,
@@ -142,7 +149,7 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
 {
     const ble_uuid_t *uuid;
     int rc;
-    //static int i=0;
+    static int i=0;
 
     uuid = ctxt->chr->uuid;
 
@@ -165,7 +172,33 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                                     &gatt_svr_data_trans[0], NULL);
             
             
-            // TEST WITH FIFO
+            if(i==0){
+                st7735_SetDisplayWindow(20, 20, 90, 90);
+                  /* Set Cursor */
+                st7735_SetCursor(20, 20); 
+
+                LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[11], MESSAGE_SIZE-11);
+
+    
+            }
+
+            i++;
+            if(i>1){
+                memcpy(&todoo->Bpic[i-8], &gatt_svr_data_trans[0], MESSAGE_SIZE);
+
+                memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
+
+                i += MESSAGE_SIZE-1;
+
+                LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            }
+
+            if(i>=16200){
+                BSP_LCD_DrawBitmap(20,20,todoo->Bpic);
+            }
+
+
+            /* TEST WITH FIFO */
             //memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
             //FIFO_task_reader.fline ++;
 
@@ -173,23 +206,20 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
             //sst26_write((struct hal_flash *) my_sst26_dev, i, &gatt_svr_data_trans[0], MESSAGE_SIZE);
             //i+=MESSAGE_SIZE;
 
-            // TEST WITH LCD
-            LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
+            /* TEST WITH LCD: write 128 pixel per 128 pixel from the smartphone */
+            //LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
             
-            // OTHER TEST WITH LCD
+            /* OTHER TEST WITH LCD: write the caracter sended */
             //BSP_LCD_DisplayChar(40, 40, gatt_svr_data_trans[0]);
             //BSP_LCD_DisplayChar(50, 50, gatt_svr_data_trans[1]);
 
-            /* Write pixel on screen */       
-
+            /* Write directly pixel by pixel on screen */       
             //st7735_SetCursor(50+i, 50);
             //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[0], 1);
             //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[1], 1);
-
             //databuf[i]=gatt_svr_data_trans;
             //i++;
-            //if(i>1){
-                
+            //if(i>1){ 
                 //i=0;
                 /*
                 for(i=0;i<128*30;i++){
