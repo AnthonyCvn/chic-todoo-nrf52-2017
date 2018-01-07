@@ -61,7 +61,7 @@ static struct sst26_dev sst26_default_dev = {
     .hal = {
         .hf_itf        = NULL,
         .hf_base_addr  = 0,
-        .hf_size       = 8192 * 512,  /* FIXME: depends on page size */
+        .hf_size       = 8192 * 512,
         .hf_sector_cnt = 8192,
         .hf_align      = 0,
     },
@@ -72,16 +72,16 @@ static struct sst26_dev sst26_default_dev = {
     /* Configurable fields that must be populated by user app */
     .spi_num            = 0,
     .spi_cfg            = NULL,
-    .ss_pin             = 0,
-    .baudrate           = 1000, //100
+    .ss_pin             = 20,
+    .baudrate           = 8000, //100
     .page_size          = 256,
     .disable_auto_erase = 0,
 };
 
 static struct hal_spi_settings sst26_default_settings = {
     .data_order = HAL_SPI_MSB_FIRST,
-    .data_mode  = HAL_SPI_MODE0, //HAL_SPI_MODE3
-    .baudrate   = 1000, //100
+    .data_mode  = HAL_SPI_MODE3, //HAL_SPI_MODE3
+    .baudrate   = 8000, 
     .word_size  = HAL_SPI_WORD_SIZE_8BIT,
 };
 
@@ -360,7 +360,7 @@ sst26_default_config(void)
 int
 sst26_init(const struct hal_flash *hal_flash_dev)
 {
-    int rc;
+    //int rc;
     struct hal_spi_settings *settings;
     struct sst26_dev *dev;
 
@@ -378,31 +378,33 @@ sst26_init(const struct hal_flash *hal_flash_dev)
         sst26_default_settings.baudrate = dev->baudrate;
     }
 
-    hal_gpio_init_out(dev->ss_pin, 1);
+    //hal_gpio_init_out(dev->ss_pin, 1);
 
     
-    rc = hal_spi_init(dev->spi_num, dev->spi_cfg, HAL_SPI_TYPE_MASTER);
-    if (rc) {
-        return (rc);
-    }
+    //rc = hal_spi_init(dev->spi_num, dev->spi_cfg, HAL_SPI_TYPE_MASTER);
+    //if (rc) {
+    //    return (rc);
+    //}
     
 
-    hal_spi_disable(dev->spi_num);
+    //hal_spi_disable(dev->spi_num);
 
-    rc = hal_spi_config(dev->spi_num, dev->settings);
-    if (rc) {
-        return (rc);
-    }
+    //rc = hal_spi_config(dev->spi_num, dev->settings);
+    //if (rc) {
+    //    return (rc);
+    //}
 
-    hal_spi_set_txrx_cb(dev->spi_num, NULL, NULL);
+    //hal_spi_set_txrx_cb(dev->spi_num, NULL, NULL);
 
-    hal_spi_enable(dev->spi_num);
+    //hal_spi_enable(dev->spi_num);
 
 
     sst26_wait_ready(dev);
     hal_gpio_write(dev->ss_pin, 0);
     hal_spi_tx_val(dev->spi_num, ULBPR); // Global unlock
     hal_gpio_write(dev->ss_pin, 1);
+
+    sst26_wait_ready(dev);
 
     return 0;
 }

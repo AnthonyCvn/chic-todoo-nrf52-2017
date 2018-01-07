@@ -32,6 +32,15 @@
 #define B_MIN   1
 #define B_HOUR  0
 
+// Address of fix images in external SPI flash memory
+#define ADD_TEST_PIC        (0x010000)
+#define ADD_ADV_REQ_PIC     (0x018042)
+#define ADD_SHARING_PIC     (0x020084)
+#define ADD_FREE_TIME_PIC   (0x0280C6)
+#define ADD_BRAND_PIC       (0x030108)
+
+#define ADD_FIRST_ACTIVITY_PIC    (0x03814A)
+#define NUM_BYTE_ACTIVITY_PIC     (0x3F48)
 
 // 1) 1B theme
 // 2) 3B hour actuel [Hour] [minute] [second]
@@ -67,9 +76,6 @@ struct Todoo_data{
     uint8_t  Bpic[N_BYTES_PICTURE];
 };
 
-extern struct Todoo_data *todoo;
-
-
 /* State declaration */
 typedef enum {
     boot,
@@ -80,6 +86,17 @@ typedef enum {
     receive_data_todoo,
     receive_pictures,
     shows_activity
-}STATE;   
+}STATE_ENUM;
+
+struct State{
+    STATE_ENUM which;
+    uint8_t config;
+};
+
+extern struct Todoo_data *todoo;
+extern struct State *state;
+
+extern STATE_ENUM mystate;
+extern uint8_t myconfig;
 
 #endif // TODOO_DATA_H_INCLUDED

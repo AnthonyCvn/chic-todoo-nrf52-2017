@@ -10,6 +10,7 @@
 #endif
 
 #include "flashtask.h"
+#include "todoo_data.h"
 
 #include <SST26/SST26.h>
 
@@ -22,7 +23,7 @@ static volatile int g_task1_loops;
 array_type FIFO_task[FIFO_TASK_HEIGHT];
 
 FIFO_task_reader_type FIFO_task_reader = {
-    .maxcnt = FIFO_TASK_WIDTH,
+    .maxcnt = MAX_FIFO_WIDTH,
     .ptr    = (uint32_t)&FIFO_task,
     .fline  = 0
 };
@@ -52,11 +53,11 @@ flash_task_handler(void *arg)
     my_sst26_dev->ss_pin = spi_cfg.ss_pin;
 
     
-    int rc;
-    rc = sst26_init((struct hal_flash *) my_sst26_dev);
-    if (rc) {
+    //int rc;
+    //rc = sst26_init((struct hal_flash *) my_sst26_dev);
+    //if (rc) {
         // XXX: error handling 
-    }
+    //}
     
 
     //static uint8_t warmtest = 0xaa;
@@ -64,16 +65,16 @@ flash_task_handler(void *arg)
     //sst26_write((struct hal_flash *) my_sst26_dev, addr, buf, len);
     //sst26_read((struct hal_flash *) my_sst26_dev, addr, buf, len);
 
-    static uint32_t addr = 0;
+    static uint32_t addr = ADD_FIRST_ACTIVITY_PIC;
 
     while (1) {
         ++g_task1_loops;
 
 
         if(FIFO_task_reader.fline != 0){
-            //sst26_write((struct hal_flash *) my_sst26_dev, addr, &FIFO_task[FIFO_task_reader.fline - 1], FIFO_TASK_WIDTH);
             -- FIFO_task_reader.fline;
-            ++ addr;
+            //sst26_write((struct hal_flash *) my_sst26_dev, addr, &FIFO_task[FIFO_task_reader.fline], FIFO_task[FIFO_task_reader.fline].N);
+            addr+=FIFO_task[FIFO_task_reader.fline].N;
         }
         /* Wait 1/6 second */
         os_time_delay(OS_TICKS_PER_SEC/6);

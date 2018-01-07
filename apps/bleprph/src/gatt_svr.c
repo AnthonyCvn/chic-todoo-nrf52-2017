@@ -149,7 +149,7 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
 {
     const ble_uuid_t *uuid;
     int rc;
-    static int i=0;
+    static uint8_t first_packet=1;
 
     uuid = ctxt->chr->uuid;
 
@@ -172,30 +172,84 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                                     &gatt_svr_data_trans[0], NULL);
             
             
-            if(i==0){
-                st7735_SetDisplayWindow(20, 20, 90, 90);
-                  /* Set Cursor */
-                st7735_SetCursor(20, 20); 
+            if(first_packet){
+                /* 
+                * Initialize the data structure todoo and allocate 
+                * enough memory depending of the number of activities
+                */
+                todoo = malloc(sizeof(struct Todoo_data));
+                todoo->parameters = malloc(sizeof(struct Parameters));
 
-                LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[11], MESSAGE_SIZE-11);
+                todoo->parameters->time[B_HOUR] = gatt_svr_data_trans[1];
+                todoo->parameters->time[B_MIN]  = gatt_svr_data_trans[2];
+                todoo->parameters->time[B_SEC]  = gatt_svr_data_trans[3];
+                todoo->parameters->day  = gatt_svr_data_trans[4];
+                todoo->parameters->num_activity  = gatt_svr_data_trans[5];
 
-    
+                todoo->activity = malloc(todoo->parameters->num_activity*sizeof(struct Activity));
+         
+                int i_act=0;
+                for(i_act=0;i_act<todoo->parameters->num_activity;i_act++){
+                    todoo->activity[i_act].day  = gatt_svr_data_trans[6+i_act*5];
+                    todoo->activity[i_act].start_time[B_HOUR] = gatt_svr_data_trans[7+i_act*5];
+                    todoo->activity[i_act].start_time[B_MIN]  = gatt_svr_data_trans[8+i_act*5];
+                    todoo->activity[i_act].end_time[B_HOUR] = gatt_svr_data_trans[9+i_act*5];
+                    todoo->activity[i_act].end_time[B_MIN]  = gatt_svr_data_trans[10+i_act*5];
+                    todoo->activity[i_act].data_add  = ADD_FIRST_ACTIVITY_PIC+i_act*NUM_BYTE_ACTIVITY_PIC;
+                }
+
+                //memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[11*todoo->parameters->num_activity], MESSAGE_SIZE-11*todoo->parameters->num_activity);
+                FIFO_task[FIFO_task_reader.fline].N = MESSAGE_SIZE-11*todoo->parameters->num_activity;
+                FIFO_task_reader.fline ++;
+                first_packet = 0;
+                
+                // Print parameters (for debug only)
+                /*
+                BSP_LCD_DisplayChar(10, 0, todoo->parameters->time[B_HOUR]/10+48);
+                BSP_LCD_DisplayChar(15, 0, todoo->parameters->time[B_HOUR]%10+48);
+                BSP_LCD_DisplayChar(25, 0, todoo->parameters->time[B_MIN]/10+48);
+                BSP_LCD_DisplayChar(30, 0, todoo->parameters->time[B_MIN]%10+48);
+                BSP_LCD_DisplayChar(40, 0,todoo->parameters->time[B_SEC]/10+48);
+                BSP_LCD_DisplayChar(45, 0,todoo->parameters->time[B_SEC]%10+48);
+                BSP_LCD_DisplayChar(10, 10, 48+todoo->parameters->day);
+                BSP_LCD_DisplayChar(10, 20, 48+todoo->parameters->num_activity);
+                for(i_act=0;i_act<todoo->parameters->num_activity;i_act++){
+                    BSP_LCD_DisplayChar(10+i_act*20, 40, 48+todoo->activity[i_act].day );
+                    BSP_LCD_DisplayChar(10+i_act*20, 50, todoo->activity[i_act].start_time[B_HOUR]/10+48);
+                    BSP_LCD_DisplayChar(15+i_act*20, 50, todoo->activity[i_act].start_time[B_HOUR]%10+48);
+                    BSP_LCD_DisplayChar(10+i_act*20, 60, todoo->activity[i_act].start_time[B_MIN]/10+48);
+                    BSP_LCD_DisplayChar(15+i_act*20, 60, todoo->activity[i_act].start_time[B_MIN]%10+48);
+                    BSP_LCD_DisplayChar(10+i_act*20, 70, todoo->activity[i_act].end_time[B_HOUR]/10+48);
+                    BSP_LCD_DisplayChar(15+i_act*20, 70, todoo->activity[i_act].end_time[B_HOUR]%10+48);
+                    BSP_LCD_DisplayChar(10+i_act*20, 80, todoo->activity[i_act].end_time[B_MIN]/10+48);
+                    BSP_LCD_DisplayChar(15+i_act*20, 80, todoo->activity[i_act].end_time[B_MIN]%10+48);
+                }
+                */
+                //st7735_SetDisplayWindow(20, 20, 90, 90);
+                //st7735_WriteReg(LCD_REG_54, 0x48);
+                //st7735_SetCursor(20, 20); 
+               //LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[11], MESSAGE_SIZE-11);
+            }else
+            {
+                //memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[1], MESSAGE_SIZE-1);
+                FIFO_task[FIFO_task_reader.fline].N = MESSAGE_SIZE-1;
+                FIFO_task_reader.fline ++;
+
+                //state->which =  shows_activity;
+                //state->config = 1;
+                //mystate=shows_activity;
+                //myconfig=1;
+                STATE_ENUM temp = shows_activity;
+                //uint8_t conf_temp = 1;
+                memcpy(&mystate, &temp, 1);
+                //memcpy(&myconfig, &conf_temp, 1);
+
             }
 
-            i++;
-            if(i>1){
-                memcpy(&todoo->Bpic[i-8], &gatt_svr_data_trans[0], MESSAGE_SIZE);
 
-                memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
-
-                i += MESSAGE_SIZE-1;
-
-                LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
-            }
-
-            if(i>=16200){
-                BSP_LCD_DrawBitmap(20,20,todoo->Bpic);
-            }
+            //if(i>=16200){
+                //BSP_LCD_DrawBitmap(20,20,todoo->Bpic);
+            //}
 
 
             /* TEST WITH FIFO */
@@ -298,12 +352,13 @@ gatt_svr_init(void)
     if (rc != 0) {
         return rc;
     }
-    
-    SPI_LCD_init(); // FOR LCD TEST
-    //SPI_MEMORY_init();
+
+    //SPI_LCD_init(); // FOR LCD VALIDATION TEST
+    //SPI_MEMORY_init(); // FOR SPI MEMORY VALIDATION TEST
 
     return 0;
 }
+
 
 void SPI_MEMORY_init(void){
     static uint8_t warmtest = 0xaa;
@@ -378,62 +433,4 @@ void SPI_LCD_init(void){
     }
     //LCD_IO_WriteMultipleData((uint8_t*)&data[0], MESSAGE_SIZE);
 */
-}
-
-void LCD_IO_Init(void){
-	
-	hal_gpio_write(pwm_lcd, 1);
-	/* LCD chip select high */
-	hal_gpio_write(ncs_lcd, 1); //LCD_CS_HIGH();
-}
-void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t pData_numb){
-	/*Send the data by SPI1 (could be adapted by changing the hspiX)*/
-    uint32_t j=0;
-    
-	/* Reset LCD control line CS */
-	hal_gpio_write(ncs_lcd, 0);
-
-	/* Set LCD data/command line DC to high */
-    hal_gpio_write(dc_lcd, 1);
-
-	/* Send Command */
-	/* While the SPI in TransmitReceive process, user can transmit data through
-         "pData" buffer */
-
-    if(pData_numb==1){
-        hal_spi_txrx(0, pData, rxbuf, 1);
-    }
-    else{
-        for(j=0;j<pData_numb;j+=2){
-            //send_8bit_serial(pData+j);
-            hal_spi_txrx(0, pData+j+1, rxbuf, 1);
-            hal_spi_txrx(0, pData+j, rxbuf, 1);
-        }
-    }
-
-
-	/* Deselect : Chip Select high */
-	hal_gpio_write(ncs_lcd, 1);
-}
-void LCD_IO_WriteReg(uint8_t Reg){
-	/*Send the register address by SPI1 (could be adapted by changing the hspiX)*/
-
-	/* Reset LCD control line CS */
-	hal_gpio_write(ncs_lcd, 0);
-
-	/* Set LCD data/command line DC to Low */
-	hal_gpio_write(dc_lcd, 0);
-
-	/* Send Command */
-	/* While the SPI in TransmitReceive process, user can transmit data through
-	     "Reg" buffer*/
-        //send_8bit_serial(&Reg);
-        hal_spi_txrx(0, &Reg, rxbuf, 1);
-
-	/* Deselect : Chip Select high */
-	hal_gpio_write(ncs_lcd, 1);
-}
-void LCD_Delay(uint32_t delay){
-    
-    os_time_delay(delay);
 }

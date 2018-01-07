@@ -1,0 +1,5 @@
+### Target: targets/split-ble-nrf52
+target.app: "@apache-mynewt-core/apps/splitty"
+target.bsp: "@apache-mynewt-core/hw/bsp/nrf52dk"
+target.build_profile: "optimized"
+target.loader: "apps/bleprph"

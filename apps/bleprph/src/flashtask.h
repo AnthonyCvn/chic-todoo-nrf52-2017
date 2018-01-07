@@ -9,7 +9,7 @@ os_stack_t flashtask_stack[FLASHTASK_STACK_SIZE];
 void flash_task_handler(void *arg);
 
 /* FIFO declaration between gatt service task and flash task */
-#define FIFO_TASK_WIDTH  128
+#define MAX_FIFO_WIDTH  128
 #define FIFO_TASK_HEIGHT 80 
 
 #define nCS_LCD   (19)
@@ -20,7 +20,8 @@ void flash_task_handler(void *arg);
 
 typedef struct array
 {
-    uint8_t buffer[FIFO_TASK_WIDTH ];
+    uint8_t buffer[MAX_FIFO_WIDTH];
+    uint8_t N;
 } array_type;
 
 typedef struct task_reader

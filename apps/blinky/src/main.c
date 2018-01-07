@@ -193,8 +193,8 @@ init_structure_exemple(struct Todoo_data *todoo){
         todoo->activity[i].start_time[2] = 00;
 
         todoo->activity[i].end_time[0] = 15;
-        todoo->activity[i].end_time[1] = 20 + 2*i;
-        todoo->activity[i].end_time[2] = 00;
+        todoo->activity[i].end_time[1] = 00 + 2*i;
+        todoo->activity[i].end_time[2] = 30;
 
         todoo->activity[i].data_add = 17;
         todoo->activity[i].data_size = 17;

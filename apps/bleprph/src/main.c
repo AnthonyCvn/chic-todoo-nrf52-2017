@@ -39,14 +39,13 @@
 /* Application-specified header. */
 #include "bleprph.h"
 
-/* lcd header */
-//#include "screentask.h"
-
+/* New task */
+#include "screentask.h"
 #include "flashtask.h"
+#include "todoo_data.h"
 
 /** Log data. */
 struct log bleprph_log;
-
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -294,14 +293,6 @@ main(void)
     assert(rc == 0);
 
     conf_load();
-
-    /* Initialise the screen task. */
-    /*
-    os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
-            SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
-            SCREENTASK_STACK_SIZE);
-    */
-
     
     /* If this app is acting as the loader in a split image setup, jump into
      * the second stage application instead of starting the OS.
@@ -320,7 +311,11 @@ main(void)
      * As the last thing, process events from default event queue.
      */
 
-    /* Initialise new tasks. */        
+    /* Initialise new tasks. */ 
+    os_task_init(&screentask, "screentask", screen_task_handler, NULL, 
+    SCREENTASK_PRIO, OS_WAIT_FOREVER, screentask_stack,
+    SCREENTASK_STACK_SIZE);
+	    
     os_task_init(&flashtask, "flashtask", flash_task_handler, NULL, 
     FLASHTASK_PRIO, OS_WAIT_FOREVER, flashtask_stack,
     FLASHTASK_STACK_SIZE);

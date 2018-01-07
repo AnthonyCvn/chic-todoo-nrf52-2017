@@ -35,6 +35,8 @@
         "flashtask.h": "c",
         "todoo_data.h": "c",
         "inttypes.h": "c",
-        "nrf52_hal.h": "c"
+        "nrf52_hal.h": "c",
+        "console.h": "c",
+        "shell.h": "c"
     }
 }

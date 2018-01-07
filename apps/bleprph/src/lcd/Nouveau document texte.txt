@@ -1,6 +1,0 @@
-hspi1
-
-HAL_Delay(delay);
-
-Error_Handler();
-
