@@ -177,9 +177,10 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                 * Initialize the data structure todoo and allocate 
                 * enough memory depending of the number of activities
                 */
+                /*
                 todoo = malloc(sizeof(struct Todoo_data));
                 todoo->parameters = malloc(sizeof(struct Parameters));
-
+                */
                 todoo->parameters->time[B_HOUR] = gatt_svr_data_trans[1];
                 todoo->parameters->time[B_MIN]  = gatt_svr_data_trans[2];
                 todoo->parameters->time[B_SEC]  = gatt_svr_data_trans[3];
@@ -202,6 +203,9 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                 FIFO_task[FIFO_task_reader.fline].N = MESSAGE_SIZE-11*todoo->parameters->num_activity;
                 FIFO_task_reader.fline ++;
                 first_packet = 0;
+
+                todoo->which_state = shows_activity;
+                todoo->config_state = 1;
                 
                 // Print parameters (for debug only)
                 /*
@@ -239,9 +243,9 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                 //state->config = 1;
                 //mystate=shows_activity;
                 //myconfig=1;
-                STATE_ENUM temp = shows_activity;
+                //STATE_ENUM temp = shows_activity;
                 //uint8_t conf_temp = 1;
-                memcpy(&mystate, &temp, 1);
+                //memcpy(&mystate, &temp, 1);
                 //memcpy(&myconfig, &conf_temp, 1);
 
             }

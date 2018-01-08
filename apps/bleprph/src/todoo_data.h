@@ -27,6 +27,8 @@
 
 #define MAX_ACTIVITY 256        // 8 bits (0-255)
 #define N_BYTES_PICTURE 16200   // picture 90px90p 2B/p
+#define N_BYTES_128x128_BMP 32834-10000
+#define N_BYTES_90x90_BMP   16266
 
 #define B_SEC   2
 #define B_MIN   1
@@ -55,6 +57,17 @@
 // 6)   16200B picture 90px90p in Bitmap (2B/p) for each activity 
 // 9) end
 
+/* State declaration */
+typedef enum {
+    boot,
+    ble_request,
+    advertize,
+    pairing,
+    receive_clock,
+    receive_data_todoo,
+    receive_pictures,
+    shows_activity
+}STATE;
 
 struct Parameters{
     uint8_t  theme;   
@@ -73,30 +86,13 @@ struct Activity{
 struct Todoo_data{
     struct Parameters *parameters;
     struct Activity   *activity;
-    uint8_t  Bpic[N_BYTES_PICTURE];
+    STATE which_state;
+    uint8_t config_state;
 };
 
-/* State declaration */
-typedef enum {
-    boot,
-    ble_request,
-    advertize,
-    pairing,
-    receive_clock,
-    receive_data_todoo,
-    receive_pictures,
-    shows_activity
-}STATE_ENUM;
 
-struct State{
-    STATE_ENUM which;
-    uint8_t config;
-};
 
 extern struct Todoo_data *todoo;
-extern struct State *state;
 
-extern STATE_ENUM mystate;
-extern uint8_t myconfig;
 
 #endif // TODOO_DATA_H_INCLUDED

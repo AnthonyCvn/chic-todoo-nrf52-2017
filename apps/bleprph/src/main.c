@@ -49,6 +49,113 @@ struct log bleprph_log;
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 
+
+// 1 /////////////////////////////////////////////////// Definition and calback for timer and GPIO interuption
+// Define button and LED
+#define LED_BLUE    7
+#define LED_GREEN   8
+#define LED_RED     9
+#define BUTTON_ADV_PIN  25
+#define STANDBY    26
+
+// Timer task number and stask size.
+#define MY_TIMER_INTERRUPT_TASK_PRIO  50     // 4
+#define MY_TIMER_INTERRUPT_TASK_STACK_SZ    (512/4)
+
+// initilize event call back
+static void my_interrupt_ev_cb(struct os_event *);
+
+static struct os_event gpio_ev = {
+    .ev_cb = my_interrupt_ev_cb,
+};
+
+static void my_timer_ev_cb(struct os_event *);
+static struct os_eventq my_timer_interrupt_eventq;
+
+static os_stack_t my_timer_interrupt_task_stack[MY_TIMER_INTERRUPT_TASK_STACK_SZ];
+static struct os_task my_timer_interrupt_task_str;
+
+/* The timer callout */
+static struct os_callout my_callout;
+/*
+ * Event callback function for the timer events every second.
+ */
+static void my_timer_ev_cb(struct os_event *ev)
+{
+    assert(ev != NULL);
+
+    todoo->parameters->time[B_SEC] = (todoo->parameters->time[B_SEC] + 1) % 60;   
+    if(!todoo->parameters->time[B_SEC]){   
+        todoo->parameters->time[B_MIN] = (todoo->parameters->time[B_MIN] + 1) % 60;   
+        if(!todoo->parameters->time[B_MIN]){
+            todoo->parameters->time[B_HOUR] = (todoo->parameters->time[B_HOUR] + 1) % 12;
+        }         
+    }     
+    
+    if(current_task_time > 0){
+        --current_task_time;
+    }
+
+    os_callout_reset(&my_callout, OS_TICKS_PER_SEC);
+}
+static void my_timer_interrupt_task(void *arg)
+{
+    while (1) {
+        os_eventq_run(&my_timer_interrupt_eventq);
+    }
+}
+/*
+ * Event callback function for interrupt events. Start advertising if button is pressed more than 8 sec
+ */
+static void my_interrupt_ev_cb(struct os_event *ev)
+{
+    assert(ev != NULL);
+
+    static uint8_t capture_time, logic_time_pressed = 0;
+    
+    hal_gpio_toggle(LED_BLUE);
+
+    
+    if(logic_time_pressed == 0){
+        capture_time = sec;
+        logic_time_pressed = 1;
+    }else{
+        logic_time_pressed = 0;
+        if((sec-capture_time) >= 8){
+            //hal_gpio_write(LED_BLUE, 1);
+        }
+    }
+    
+}
+
+static void
+my_gpio_irq(void *arg)
+{   
+    // Post an interrupt event to the my_timer_interrupt_eventq event queue:
+    os_eventq_put(&my_timer_interrupt_eventq, &gpio_ev);
+}
+
+/*
+ * Task and interupt initialization for the Todoo app
+ */
+static void
+init_todoo(void)
+{
+    /* 
+     * Initialize and enable interrupts for the pin for button 1 and 
+     * configure the button with pull up resistor on the nrf52dk.
+     */ 
+    hal_gpio_irq_init(BUTTON_ADV_PIN, my_gpio_irq, NULL, HAL_GPIO_TRIG_RISING, HAL_GPIO_PULL_UP);  
+    hal_gpio_irq_enable(BUTTON_ADV_PIN);
+    hal_gpio_init_out(STANDBY, 1);
+
+    
+    todoo = malloc(sizeof(struct Todoo_data));
+    todoo->parameters = malloc(sizeof(struct Parameters));
+}
+// 1 ///////////////////////////////////////////////////// 1 ///////////////////////////////////////////////////
+
+
 /**
  * Logs information about a connection to the console.
 
@@ -319,6 +426,44 @@ main(void)
     os_task_init(&flashtask, "flashtask", flash_task_handler, NULL, 
     FLASHTASK_PRIO, OS_WAIT_FOREVER, flashtask_stack,
     FLASHTASK_STACK_SIZE);
+
+
+        // Initialize timer
+    /* Use a dedicate event queue for timer and interrupt events */
+    os_eventq_init(&my_timer_interrupt_eventq);
+    /* 
+     * Create the task to process timer and interrupt events from the
+     * my_timer_interrupt_eventq event queue.
+     */
+    os_task_init(&my_timer_interrupt_task_str, "timer_interrupt_task", 
+                    my_timer_interrupt_task, NULL, 
+                    MY_TIMER_INTERRUPT_TASK_PRIO, OS_WAIT_FOREVER, 
+                    my_timer_interrupt_task_stack, 
+                    MY_TIMER_INTERRUPT_TASK_STACK_SZ);
+    /* 
+    * Initialize the callout for a timer event.  
+    * The my_timer_ev_cb callback function processes the timer events.
+    */
+    os_callout_init(&my_callout, &my_timer_interrupt_eventq, my_timer_ev_cb, NULL);
+
+    os_callout_reset(&my_callout, OS_TICKS_PER_SEC);
+
+    
+    // Task and interupt initialization for the Todoo app
+    init_todoo();
+
+    /* For LED toggling */
+    int r_led_pin;
+    r_led_pin = LED_RED;
+    hal_gpio_init_out(r_led_pin, 0);
+
+    int g_led_pin;
+    g_led_pin = LED_GREEN;
+    hal_gpio_init_out(g_led_pin, 0);
+
+    int b_led_pin;
+    b_led_pin = LED_BLUE;
+    hal_gpio_init_out(b_led_pin, 0);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

@@ -55,12 +55,11 @@ int pwm_lcd;
 // SPI read buffer 
 uint8_t rxbuf[5];
 
-uint8_t image_buf[32834];
+uint8_t image_buf[N_BYTES_128x128_BMP];
 
-struct State *state;
-
-STATE_ENUM mystate;
-uint8_t myconfig;
+//struct State *state;
+//STATE_ENUM mystate;
+//uint8_t myconfig;
 
 
 void refresh_time_ptr(uint8_t hor_pos,uint32_t current_task_time, uint8_t * ptr){
@@ -318,22 +317,22 @@ screen_task_handler(void *arg)
 
     //sst26_chip_erase((struct hal_flash *) my_sst26_dev);
     //os_time_delay(OS_TICKS_PER_SEC);
-    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_BRAND , &brand_128x128, 32834);
-    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ , &advertize_request, 32834);
-    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_SHARING , &sharing, 32834);
-    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME , &free_time, 16266);
+    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_BRAND , &brand_128x128, N_BYTES_128x128_BMP);
+    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ , &advertize_request, N_BYTES_128x128_BMP);
+    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_SHARING , &sharing, N_BYTES_128x128_BMP);
+    //sst26_write((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME , &free_time, N_BYTES_90x90_BMP);
     //os_time_delay(2*OS_TICKS_PER_SEC);
 
-    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_BRAND_PIC, &image_buf, 32834);
+    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_BRAND_PIC, &image_buf, N_BYTES_128x128_BMP);
     //BSP_LCD_DrawBitmap(0,0,image_buf);
     //os_time_delay(2*OS_TICKS_PER_SEC);
-    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ_PIC , &image_buf, 32834);
+    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ_PIC , &image_buf, N_BYTES_128x128_BMP);
     //BSP_LCD_DrawBitmap(0,0,image_buf);
     //os_time_delay(2*OS_TICKS_PER_SEC);
-    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_SHARING_PIC , &image_buf, 32834);
+    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_SHARING_PIC , &image_buf, N_BYTES_128x128_BMP);
     //BSP_LCD_DrawBitmap(0,0,image_buf);
     //os_time_delay(2*OS_TICKS_PER_SEC);
-    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC , &image_buf, 16266);
+    //sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC , &image_buf, N_BYTES_90x90_BMP);
     //BSP_LCD_DrawBitmap(20,20,image_buf);
     //os_time_delay(2*OS_TICKS_PER_SEC);
     //os_time_delay(OS_TICKS_PER_SEC);
@@ -382,10 +381,13 @@ screen_task_handler(void *arg)
 
     uint8_t act_code[2]={0};
 
-    state->which =  boot;
-    state->config = 1;
-    mystate = boot;
-    myconfig = 1;
+    //state->which =  boot;
+    //state->config = 1;
+    ///mystate = boot;
+    //myconfig = 1;
+
+    todoo->which_state = boot;
+    todoo->config_state = 1;
 
     while (1) {
         ++g_task1_loops;
@@ -432,12 +434,12 @@ screen_task_handler(void *arg)
         new_activity++;
         past_activity++;
         os_time_delay(OS_TICKS_PER_SEC);
-        switch(mystate) { //state->which
+        switch(todoo->which_state) {
             case boot :             
-                if(mystate){
-                    sst26_read((struct hal_flash *) my_sst26_dev, ADD_BRAND_PIC , &image_buf, 32834);
+                if(todoo->config_state){
+                    sst26_read((struct hal_flash *) my_sst26_dev, ADD_BRAND_PIC , &image_buf, N_BYTES_128x128_BMP);
                     BSP_LCD_DrawBitmap(0,0,image_buf);
-                    mystate = 0;
+                    todoo->config_state  = 0;
                 }
                 ++boot_counter;
                 if(boot_counter> 5){
@@ -449,29 +451,28 @@ screen_task_handler(void *arg)
                     //BSP_LCD_DisplayStringAtLine(9, adv_request);
                     //ext_memory_bitmap_to_LCD(0, 0, PIC_BLUETOOTH_BRAND_ADD, (struct hal_flash *) my_sst26_dev);
                         // Request pairing when the gatt service is configured
-                    mystate =  ble_request;
-                    mystate = 1;
+                    todoo->which_state  =  ble_request;
+                    todoo->config_state  = 1;
                     boot_counter = 0;
                 }
                 break;
                 
             case ble_request :
-                if(mystate){
-                    sst26_read((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ_PIC, &image_buf, 32834);
+                if(todoo->config_state){
+                    sst26_read((struct hal_flash *) my_sst26_dev, ADD_ADV_REQ_PIC, &image_buf, N_BYTES_128x128_BMP);
                     BSP_LCD_DrawBitmap(0,0,image_buf);
-                    mystate = 0;
+                    todoo->config_state  = 0;
                 }
                 break;    
             case shows_activity : 
-                if(boot_counter==0){
-                    boot_counter++;
+                if(todoo->config_state){
                     which_activity(todoo, act_code);
                     if(act_code[0]!=act_code[1]){
-                        sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC, &image_buf, 16266);
+                        sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC, &image_buf, N_BYTES_90x90_BMP);
                         BSP_LCD_DrawBitmap(20,20,image_buf);
                     }else{
                         // Show activity number in act_code[0]
-                        sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC, &image_buf, 16266);
+                        sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC, &image_buf, N_BYTES_90x90_BMP);
                         BSP_LCD_DrawBitmap(20,20,image_buf);
                         image_buf[0]=act_code[0]/10+48;
                         image_buf[1]=act_code[0]%10+48;
@@ -483,7 +484,7 @@ screen_task_handler(void *arg)
                     current_task_time = task_time;
 
                     initialize_screen_bar();
-                    myconfig = 0;
+                    todoo->config_state = 0;
                 }
 
                 refresh_time_ptr(5 , current_task_time, &ptr_clock[0]);
@@ -493,7 +494,7 @@ screen_task_handler(void *arg)
                 BSP_LCD_DisplayStringAtLine(9, &ptr_clock[0]);
                 
                 if(!task_percent){
-                    myconfig = 1;
+                    todoo->config_state = 1;
                 }
                 break;
               
