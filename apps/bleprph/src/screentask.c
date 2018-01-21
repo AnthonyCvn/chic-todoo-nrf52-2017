@@ -119,6 +119,9 @@ uint32_t refresh_task_percent(uint32_t current_task_time, uint32_t total_task_ti
 *  -If the real time is between two activiy:
 *   act_code[0] = previous activity number
 *   act_code[1] = next activity number
+*   
+*   act_code[2] = 1 : wait first activity
+*   act_code[3] = 1 : no much activities
 * 
 *  -If the real time is during an activiy:
 *  act_code[0] = act_code[1] = actual activity
@@ -129,9 +132,12 @@ void which_activity(struct Todoo_data *todoo, uint8_t* act_code){
     uint32_t start_min;
     uint32_t end_min;
 
-    for(i=act_code[0];i<MAX_ACTIVITY;i++){
+    act_code[2] = 0;
+    act_code[3] = 0;
+
+    for(i=0;i<todoo->parameters->num_activity;i++){
         start_min = 24*60*todoo->activity[i].day+60*todoo->activity[i].start_time[B_HOUR]+todoo->activity[i].start_time[B_MIN];
-        end_min = 24*60*todoo->activity[i].day+60*todoo->activity[i].end_time[B_HOUR]+todoo->activity[i].end_time[B_MIN];
+        end_min   = 24*60*todoo->activity[i].day+60*todoo->activity[i].end_time[B_HOUR]+todoo->activity[i].end_time[B_MIN];
         if(current_min>=start_min){
             act_code[0]=i;
             if(current_min<end_min){
@@ -142,6 +148,12 @@ void which_activity(struct Todoo_data *todoo, uint8_t* act_code){
             }
         }else
         {
+            if(current_min < start_min){
+                act_code[2] = 1;
+            }
+            if(current_min > end_min){
+                //act_code[3] = 1;
+            }
             break;
         }
 
@@ -154,16 +166,32 @@ void which_activity(struct Todoo_data *todoo, uint8_t* act_code){
 int current_task_time_calculation(struct Todoo_data *todoo, uint16_t activity_num_start, uint16_t activity_num_end){
     uint32_t start, end;
     if(activity_num_start==activity_num_end){
-        start = todoo->activity[activity_num_start].start_time[B_SEC] + 60 * todoo->activity[activity_num_start].start_time[B_MIN] + 3600 * todoo->activity[activity_num_start].start_time[B_HOUR];
-        end =   todoo->activity[activity_num_end].end_time[B_SEC] + 60 * todoo->activity[activity_num_end].end_time[B_MIN] + 3600 * todoo->activity[activity_num_end].end_time[B_HOUR];
+        start = 60 * todoo->activity[activity_num_start].start_time[B_MIN] + 3600 * todoo->activity[activity_num_start].start_time[B_HOUR];
+        end =   60 * todoo->activity[activity_num_end].end_time[B_MIN] + 3600 * todoo->activity[activity_num_end].end_time[B_HOUR];
     }else
     {
-        start = todoo->activity[activity_num_start].end_time[B_SEC] + 60 * todoo->activity[activity_num_start].end_time[B_MIN] + 3600 * todoo->activity[activity_num_start].end_time[B_HOUR];
-        end =   todoo->activity[activity_num_end].start_time[B_SEC] + 60 * todoo->activity[activity_num_end].start_time[B_MIN] + 3600 * todoo->activity[activity_num_end].start_time[B_HOUR];
+        start = 60 * todoo->activity[activity_num_start].end_time[B_MIN] + 3600 * todoo->activity[activity_num_start].end_time[B_HOUR];
+        end =   60 * todoo->activity[activity_num_end].start_time[B_MIN] + 3600 * todoo->activity[activity_num_end].start_time[B_HOUR];
     }
 
     return end-start;
 }
+
+/* 
+*  Calculate the time spend in second of an activity
+*/ 
+int current_task_time_spend_calculation(struct Todoo_data *todoo, uint16_t activity_num_start, uint16_t activity_num_end){
+    uint32_t end, current;
+    if(activity_num_start==activity_num_end){
+        end =   60 * todoo->activity[activity_num_end].end_time[B_MIN] + 3600 * todoo->activity[activity_num_end].end_time[B_HOUR];
+    }else
+    {
+        end =   60 * todoo->activity[activity_num_end].start_time[B_MIN] + 3600 * todoo->activity[activity_num_end].start_time[B_HOUR];
+    }
+    current =  todoo->parameters->time[B_SEC] + 60 * todoo->parameters->time[B_MIN] + 3600 * todoo->parameters->time[B_HOUR];
+    return end-current;
+}
+
 
 /* 
 *  Draw the time bar according to the activity spend time
@@ -323,7 +351,7 @@ screen_task_handler(void *arg)
     uint8_t ptr_clock[10];
     uint32_t task_percent;
     uint32_t task_time = 0;
-    uint8_t act_code[2]={0};
+    uint8_t act_code[4]={0};
 
     todoo->which_state = boot;
     todoo->config_state = 1;
@@ -362,8 +390,20 @@ screen_task_handler(void *arg)
                 break;    
             case shows_activity : 
                 if(todoo->config_state){
+                    todoo->config_state = 0;
+
                     BSP_LCD_Clear(LCD_COLOR_WHITE);
-                    which_activity(todoo, act_code);
+
+                    which_activity(todoo, &act_code[0]);
+
+                    if(act_code[2]){
+                        todoo->config_state = 1;
+                        todoo->which_state  =  wait_for_activity;
+                    }
+                    if(act_code[3]){
+                        todoo->which_state  =  ble_request;
+                        todoo->config_state  = 1;
+                    }
                
                     if(act_code[0]!=act_code[1]){
                         //sst26_read((struct hal_flash *) my_sst26_dev, ADD_FREE_TIME_PIC, &image_buf, N_BYTES_90x90_BMP);
@@ -379,10 +419,9 @@ screen_task_handler(void *arg)
                     }
                     
                     task_time = current_task_time_calculation(todoo, act_code[0], act_code[1]);
-                    current_task_time = task_time;
+                    current_task_time = current_task_time_spend_calculation(todoo, act_code[0], act_code[1]);
 
                     initialize_screen_bar();
-                    todoo->config_state = 0;
                 }
 
 
@@ -393,6 +432,10 @@ screen_task_handler(void *arg)
                     BSP_LCD_DisplayChar(45, 0, todoo->parameters->time[B_MIN]%10+48);
                     BSP_LCD_DisplayChar(60, 0,todoo->parameters->time[B_SEC]/10+48);
                     BSP_LCD_DisplayChar(70, 0,todoo->parameters->time[B_SEC]%10+48);
+                    
+                    BSP_LCD_DisplayChar(100, 0,48+act_code[0]);
+                    BSP_LCD_DisplayChar(115, 0,48+act_code[1]);
+
                     BSP_LCD_DisplayChar(10, 10, 48+todoo->parameters->day);
                     BSP_LCD_DisplayChar(10, 20, 48+todoo->parameters->num_activity);
                     int i_act;
@@ -415,11 +458,14 @@ screen_task_handler(void *arg)
                 BSP_LCD_SetFont(&Font12);
                 BSP_LCD_DisplayStringAtLine(9, &ptr_clock[0]);
                 
-                if(!task_percent){
+                if(current_task_time == 0){
                     todoo->config_state = 1;
                 }
+
                 break;
-              
+            case wait_for_activity :   
+
+                break;               
             default :
                 break;
         }

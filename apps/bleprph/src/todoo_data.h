@@ -54,7 +54,8 @@ typedef enum {
     receive_clock,
     receive_data_todoo,
     receive_pictures,
-    shows_activity
+    shows_activity,
+    wait_for_activity
 }STATE;
 
 struct Parameters{
