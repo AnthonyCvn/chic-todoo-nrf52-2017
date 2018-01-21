@@ -1,3 +1,18 @@
+/* 
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
+ *
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+ *
+ * Task to manage the External memory
+ *
+ * All needed parameter are stored in structure todoo
+ * (see todoo_data.h)
+ * 
+*/
+
 #include <assert.h>
 #include <string.h>
 
@@ -78,12 +93,5 @@ flash_task_handler(void *arg)
         }
         /* Wait 1/6 second */
         os_time_delay(OS_TICKS_PER_SEC/6);
-
-
-
-        //os_time_delay(OS_TICKS_PER_SEC);
-
-
-
     }
 }

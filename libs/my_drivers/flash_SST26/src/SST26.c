@@ -1,21 +1,16 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Driver to use the external SPI memory SST26
+ * 
+ * Based on flah memory driver at45db 
+ * From Apache mynewt
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+*/
 
 #include <os/os.h>
 
@@ -377,27 +372,6 @@ sst26_init(const struct hal_flash *hal_flash_dev)
         memcpy(settings, &sst26_default_settings, sizeof(sst26_default_settings));
         sst26_default_settings.baudrate = dev->baudrate;
     }
-
-    //hal_gpio_init_out(dev->ss_pin, 1);
-
-    
-    //rc = hal_spi_init(dev->spi_num, dev->spi_cfg, HAL_SPI_TYPE_MASTER);
-    //if (rc) {
-    //    return (rc);
-    //}
-    
-
-    //hal_spi_disable(dev->spi_num);
-
-    //rc = hal_spi_config(dev->spi_num, dev->settings);
-    //if (rc) {
-    //    return (rc);
-    //}
-
-    //hal_spi_set_txrx_cb(dev->spi_num, NULL, NULL);
-
-    //hal_spi_enable(dev->spi_num);
-
 
     sst26_wait_ready(dev);
     hal_gpio_write(dev->ss_pin, 0);

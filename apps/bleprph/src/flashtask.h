@@ -1,4 +1,13 @@
-/* My Task */
+/* 
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
+ *
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+*/
+
+/* Flash task structure */
 struct os_task flashtask;
 /* My Task Stack */
 #define FLASHTASK_STACK_SIZE OS_STACK_ALIGN(256)

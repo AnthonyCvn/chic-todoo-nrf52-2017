@@ -1,4 +1,29 @@
-/*
+/* 
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
+ *
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+ * 
+ * Receive data from the Todoo android application through a Gatt server.
+ * 
+ * The data are receive according to the following order:
+ * 1) 1B theme
+ * 2) 3B heure actuel [Heur] [minute] [second]
+ * 3) 1B date [jour de la semaine] 0-6 du lundi au dimanche
+ * 4) 1B nombre d'activité envoyé
+ * 5  for(première activité à la dernière)
+ * 6)   1B indiquer le jour de l'activité qui arrive, 0 pour le lundi 
+ * 7)   2B début d'activité [heure] [minute]
+ * 8)   2B fin d'activité [heure] [minute]
+ * 9) end
+ * 5  for(première activité à la dernière)
+ * 6)   16200B image 90px90p en bitmap de chaque activité 
+ * 9) end
+ *  
+ * Based on BLEPRPH example and under Apache mynewt license:
+ * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -204,8 +229,8 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
                 FIFO_task_reader.fline ++;
                 first_packet = 0;
 
-                todoo->which_state = shows_activity;
                 todoo->config_state = 1;
+                todoo->which_state = shows_activity;
                 
                 // Print parameters (for debug only)
                 /*
@@ -256,7 +281,9 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
             //}
 
 
-            /* TEST WITH FIFO */
+            /*
+            * TEST between the FIFO and the external memory
+            */
             //memcpy(&FIFO_task[FIFO_task_reader.fline], &gatt_svr_data_trans[0], MESSAGE_SIZE);
             //FIFO_task_reader.fline ++;
 
@@ -264,36 +291,16 @@ gatt_svr_chr_trans_data(uint16_t conn_handle, uint16_t attr_handle,
             //sst26_write((struct hal_flash *) my_sst26_dev, i, &gatt_svr_data_trans[0], MESSAGE_SIZE);
             //i+=MESSAGE_SIZE;
 
-            /* TEST WITH LCD: write 128 pixel per 128 pixel from the smartphone */
+            /*
+            * TEST WITH LCD: write 128 pixel per 128 pixel from the smartphone
+            */
             //LCD_IO_WriteMultipleData((uint8_t*) &gatt_svr_data_trans[0], MESSAGE_SIZE);
             
-            /* OTHER TEST WITH LCD: write the caracter sended */
+            /* 
+             * OTHER TEST WITH LCD: write the caracter sended
+            */
             //BSP_LCD_DisplayChar(40, 40, gatt_svr_data_trans[0]);
             //BSP_LCD_DisplayChar(50, 50, gatt_svr_data_trans[1]);
-
-            /* Write directly pixel by pixel on screen */       
-            //st7735_SetCursor(50+i, 50);
-            //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[0], 1);
-            //LCD_IO_WriteMultipleData(&gatt_svr_data_trans[1], 1);
-            //databuf[i]=gatt_svr_data_trans;
-            //i++;
-            //if(i>1){ 
-                //i=0;
-                /*
-                for(i=0;i<128*30;i++){
-                    LCD_IO_WriteMultipleData((uint8_t*)databuf, 2);
-                }
-                databuf[0]=0x61;
-                databuf[1]=0x62;
-                for(i=0;i<128*30;i++){
-                    LCD_IO_WriteMultipleData((uint8_t*)databuf, 2);
-                }
-                i=0;
-                BSP_LCD_DisplayChar(50, 40, databuf[0]);
-                BSP_LCD_DisplayChar(50, 50, databuf[1]);
-                */
-            //}
-
             return rc;
 
         default:
@@ -357,6 +364,7 @@ gatt_svr_init(void)
         return rc;
     }
 
+    // ONLY INITIALIZE FOR DEBUG PURPOSE
     //SPI_LCD_init(); // FOR LCD VALIDATION TEST
     //SPI_MEMORY_init(); // FOR SPI MEMORY VALIDATION TEST
 
@@ -376,13 +384,13 @@ void SPI_MEMORY_init(void){
     if (rc) {
         // XXX: error handling 
     }
-
     sst26_write((struct hal_flash *) my_sst26_dev, 0, &warmtest, 1);
 }
-
-
+ /*
+ * Initialize SPI and GPIO
+ */
 void SPI_LCD_init(void){    
-    /* LCD configuration when caracteristic is read */
+
     hal_spi_disable(0);
     hal_spi_config(0, &screen_SPI_settings);
     hal_spi_enable(0);
@@ -406,35 +414,13 @@ void SPI_LCD_init(void){
     st7735_DisplayOn();
 
     BSP_LCD_Clear(LCD_COLOR_RED);
-    
-    //st7735_DisplayOff();
     BSP_LCD_Clear(LCD_COLOR_GREEN);
-    //st7735_DisplayOn();
-
     BSP_LCD_Clear(LCD_COLOR_BLUE);
 
-
+    //Init LCD driver to receveive pixels in location 0, 0
     st7735_SetDisplayWindow(0, 0, 128, 128);
-    
     st7735_WriteReg(LCD_REG_54, 0x48);
     st7735_SetCursor(0, 0);  
 
-    // Set LCD ready to receive pixels
-    //st7735_SetDisplayWindow(50, 50, 128, 128);
 
-    /* Set GRAM write direction and BGR = 0 */
-    /* Memory access control: MY = 0, MX = 1, MV = 0, ML = 0 */
-    //st7735_WriteReg(LCD_REG_54, 0x48);
-/*
-    //uint8_t data[MESSAGE_SIZE];
-    //int i;
-    for(i=0;i<20;i++){
-        data[i]=0xCD;
-        //BSP_LCD_DrawPixel(50+i, 50, data[1]);
-        st7735_SetCursor(50+i, 50);
-        LCD_IO_WriteMultipleData(&data[0], 1);
-        LCD_IO_WriteMultipleData(&data[1], 1);
-    }
-    //LCD_IO_WriteMultipleData((uint8_t*)&data[0], MESSAGE_SIZE);
-*/
 }

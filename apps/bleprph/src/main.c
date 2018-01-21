@@ -1,4 +1,20 @@
 /*
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
+ *
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+ *
+ * Main function to initialize
+ * - Bluetooth nimble
+ * - RTC clock
+ * - GPIO interuption
+ * - Screentask (Manage LCD, see screentask.c) 
+ * - Flashtask (Manage external memory, see flashtask.c) 
+ * 
+ * Based on BLEPRPH example and under Apache mynewt license:
+ * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -51,6 +67,9 @@ static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 
 
 // 1 /////////////////////////////////////////////////// Definition and calback for timer and GPIO interuption
+/* 
+*  Definition and calback for timer and GPIO interuption
+*/
 // Define button and LED
 #define LED_BLUE    7
 #define LED_GREEN   8
@@ -59,7 +78,7 @@ static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 #define STANDBY    26
 
 // Timer task number and stask size.
-#define MY_TIMER_INTERRUPT_TASK_PRIO  50     // 4
+#define MY_TIMER_INTERRUPT_TASK_PRIO  50 
 #define MY_TIMER_INTERRUPT_TASK_STACK_SZ    (512/4)
 
 // initilize event call back
@@ -156,39 +175,6 @@ init_todoo(void)
 // 1 ///////////////////////////////////////////////////// 1 ///////////////////////////////////////////////////
 
 
-/**
- * Logs information about a connection to the console.
-
-static void
-// bleprph_print_conn_desc(struct ble_gap_conn_desc *desc)
-{
-    BLEPRPH_LOG(INFO, "handle=%d our_ota_addr_type=%d our_ota_addr=",
-                desc->conn_handle, desc->our_ota_addr.type);
-    print_addr(desc->our_ota_addr.val);
-    BLEPRPH_LOG(INFO, " our_id_addr_type=%d our_id_addr=",
-                desc->our_id_addr.type);
-    print_addr(desc->our_id_addr.val);
-    BLEPRPH_LOG(INFO, " peer_ota_addr_type=%d peer_ota_addr=",
-                desc->peer_ota_addr.type);
-    print_addr(desc->peer_ota_addr.val);
-    BLEPRPH_LOG(INFO, " peer_id_addr_type=%d peer_id_addr=",
-                desc->peer_id_addr.type);
-    print_addr(desc->peer_id_addr.val);
-    BLEPRPH_LOG(INFO, " conn_itvl=%d conn_latency=%d supervision_timeout=%d "
-                "encrypted=%d authenticated=%d bonded=%d\n",
-                desc->conn_itvl, desc->conn_latency,
-                desc->supervision_timeout,
-                desc->sec_state.encrypted,
-                desc->sec_state.authenticated,
-                desc->sec_state.bonded);
-}
- */
-
-/**
- * Enables advertising with the following parameters:
- *     o General discoverable mode.
- *     o Undirected connectable mode.
- */
 static void
 bleprph_advertise(void)
 {
@@ -367,8 +353,6 @@ int g_led_pin;
  *
  * The main task for the project. This function initializes the packages,
  * then starts serving events from default event queue.
- *
- * @return int NOTE: this function should never return!
  */
 int
 main(void)
@@ -428,7 +412,7 @@ main(void)
     FLASHTASK_STACK_SIZE);
 
 
-        // Initialize timer
+    // Initialize timer
     /* Use a dedicate event queue for timer and interrupt events */
     os_eventq_init(&my_timer_interrupt_eventq);
     /* 
@@ -452,7 +436,7 @@ main(void)
     // Task and interupt initialization for the Todoo app
     init_todoo();
 
-    /* For LED toggling */
+    /* GPIO intit (or LED toggling only)*/
     int r_led_pin;
     r_led_pin = LED_RED;
     hal_gpio_init_out(r_led_pin, 0);

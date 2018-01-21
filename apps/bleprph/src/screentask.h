@@ -1,3 +1,12 @@
+/* 
+ * CHIC - China Hardware Innovation Camp - Todoo
+ * https://chi.camp/projects/todoo/
+ *
+ * Anthony Cavin
+ * anthony.cavin.ac@gmail.com
+ * 2018, January 11
+*/
+
 #include <hal/hal_flash_int.h>
 #include <hal/hal_spi.h>
 
